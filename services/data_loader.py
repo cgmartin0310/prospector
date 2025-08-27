@@ -5,7 +5,6 @@ This will populate the database with all US states and counties.
 
 from models import db, State, County
 import json
-import requests
 from flask import current_app
 
 class DataLoader:
