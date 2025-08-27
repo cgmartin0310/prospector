@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: prospector
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.16
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false  # This will need to be set manually in Render dashboard
+    healthCheckPath: /health
+    disk:
+      name: prospector-disk
+      mountPath: /opt/render/project/src
+      sizeGB: 1

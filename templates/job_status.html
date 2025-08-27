@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}Job Status - Prospector{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><i class="fas fa-chart-line text-primary"></i> Job Status</h1>
+        <p class="text-muted mb-0">Job #{{ job.id }} - {{ job.state.name }}</p>
+    </div>
+    <div>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-arrow-left"></i> Dashboard
+        </a>
+        {% if job.status == 'running' %}
+        <button class="btn btn-warning" onclick="pauseJob({{ job.id }})">
+            <i class="fas fa-pause"></i> Pause
+        </button>
+        {% elif job.status == 'paused' %}
+        <button class="btn btn-success" onclick="resumeJob({{ job.id }})">
+            <i class="fas fa-play"></i> Resume
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Job Overview -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5>Search Query</h5>
+                        <p class="mb-3">{{ job.search_query }}</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>State:</strong> {{ job.state.name }}<br>
+                                <strong>Created:</strong> {{ job.created_at.strftime('%m/%d/%Y %I:%M %p') }}<br>
+                                {% if job.started_at %}
+                                <strong>Started:</strong> {{ job.started_at.strftime('%m/%d/%Y %I:%M %p') }}<br>
+                                {% endif %}
+                                {% if job.completed_at %}
+                                <strong>Completed:</strong> {{ job.completed_at.strftime('%m/%d/%Y %I:%M %p') }}<br>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Status:</strong> 
+                                <span class="status-badge status-{{ job.status }}">{{ job.status.title() }}</span><br>
+                                {% if job.current_county %}
+                                <strong>Current County:</strong> <span id="current-county">{{ job.current_county }}</span><br>
+                                {% endif %}
+                                <strong>Results Found:</strong> <span id="results-count">{{ results|length }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Progress</h6>
+                        <div class="progress mb-2" style="height: 20px;">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ job.progress_percentage }}%"
+                                 aria-valuenow="{{ job.progress_percentage }}" 
+                                 aria-valuemin="0" aria-valuemax="100">
+                                {{ job.progress_percentage }}%
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {% set total_counties = job.state.counties|length %}
+                            {% set processed = results|length %}
+                            {{ processed }} of {{ total_counties }} counties processed
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Message (if any) -->
+{% if job.error_message %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Error:</strong> {{ job.error_message }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Results -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-building"></i> Organizations Found</h5>
+                <div>
+                    {% if results %}
+                    <button class="btn btn-sm btn-outline-success" onclick="exportResults()">
+                        <i class="fas fa-download"></i> Export CSV
+                    </button>
+                    {% endif %}
+                    <span class="badge bg-primary">{{ results|length }} results</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if results %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>County</th>
+                                    <th>Organization</th>
+                                    <th>Description</th>
+                                    <th>Contact</th>
+                                    <th>Confidence</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for result in results %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ result.county.name }}</strong><br>
+                                        <small class="text-muted">{{ result.county.state.abbreviation }}</small>
+                                    </td>
+                                    <td>
+                                        {% if result.organization_name %}
+                                            <strong>{{ result.organization_name }}</strong>
+                                            {% if result.address %}
+                                                <br><small class="text-muted">{{ result.address }}</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <em class="text-muted">No organizations found</em>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if result.description %}
+                                            {{ result.description[:100] }}{% if result.description|length > 100 %}...{% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if result.contact_info and result.contact_info != '{}' %}
+                                            {% set contact = result.contact_info|from_json %}
+                                            {% if contact.phone %}
+                                                <i class="fas fa-phone"></i> {{ contact.phone }}<br>
+                                            {% endif %}
+                                            {% if contact.email %}
+                                                <i class="fas fa-envelope"></i> {{ contact.email }}<br>
+                                            {% endif %}
+                                            {% if contact.website %}
+                                                <i class="fas fa-globe"></i> <a href="{{ contact.website }}" target="_blank">Website</a>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if result.confidence_score > 0 %}
+                                            <div class="progress" style="width: 60px; height: 10px;">
+                                                <div class="progress-bar 
+                                                    {% if result.confidence_score >= 0.8 %}bg-success
+                                                    {% elif result.confidence_score >= 0.6 %}bg-warning
+                                                    {% else %}bg-danger{% endif %}" 
+                                                     style="width: {{ (result.confidence_score * 100)|round }}%">
+                                                </div>
+                                            </div>
+                                            <small>{{ (result.confidence_score * 100)|round }}%</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                onclick="viewDetails({{ result.id }})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        {% if job.status == 'running' %}
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h5>Search in Progress</h5>
+                            <p class="text-muted">
+                                {% if job.current_county %}
+                                    Currently researching {{ job.current_county }} County...
+                                {% else %}
+                                    Preparing to start county research...
+                                {% endif %}
+                            </p>
+                        {% elif job.status == 'pending' %}
+                            <i class="fas fa-clock fa-3x text-warning mb-3"></i>
+                            <h5>Job Pending</h5>
+                            <p class="text-muted">This job is waiting to start.</p>
+                        {% elif job.status == 'completed' %}
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h5>Search Complete</h5>
+                            <p class="text-muted">No organizations were found matching your search criteria.</p>
+                        {% else %}
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5>No Results Yet</h5>
+                            <p class="text-muted">Results will appear here as the search progresses.</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Result Details Modal -->
+<div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Organization Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="resultModalBody">
+                <!-- Content loaded via JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function pauseJob(jobId) {
+    if (confirm('Are you sure you want to pause this job?')) {
+        // Implementation for pausing jobs
+        alert('Pause functionality would be implemented here');
+    }
+}
+
+function resumeJob(jobId) {
+    if (confirm('Resume this job?')) {
+        // Implementation for resuming jobs
+        alert('Resume functionality would be implemented here');
+    }
+}
+
+function exportResults() {
+    window.location.href = `/api/job/{{ job.id }}/export`;
+}
+
+function viewDetails(resultId) {
+    fetch(`/api/result/${resultId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('resultModalBody').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Organization</h6>
+                        <p><strong>${data.organization_name || 'N/A'}</strong></p>
+                        
+                        <h6>Description</h6>
+                        <p>${data.description || 'No description available'}</p>
+                        
+                        <h6>Address</h6>
+                        <p>${data.address || 'No address available'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Contact Information</h6>
+                        ${data.contact_info ? 
+                            Object.entries(JSON.parse(data.contact_info))
+                                .map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`)
+                                .join('') 
+                            : '<p>No contact information available</p>'
+                        }
+                        
+                        <h6>Additional Notes</h6>
+                        <p>${data.additional_notes || 'No additional notes'}</p>
+                        
+                        <h6>Confidence Score</h6>
+                        <p>${Math.round(data.confidence_score * 100)}%</p>
+                    </div>
+                </div>
+                
+                <hr>
+                <h6>Raw AI Response</h6>
+                <pre style="max-height: 200px; overflow-y: auto;">${data.ai_response_raw}</pre>
+            `;
+            
+            new bootstrap.Modal(document.getElementById('resultModal')).show();
+        })
+        .catch(console.error);
+}
+</script>
+{% endblock %}

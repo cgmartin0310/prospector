@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}All Results - Prospector{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-list-ul text-primary"></i> All Results</h1>
+    <div>
+        <a href="{{ url_for('start_search_form') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Search
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="job_filter" class="form-label">Filter by Job</label>
+                <select class="form-select" id="job_filter" name="job_id">
+                    <option value="">All Jobs</option>
+                    {% for job in jobs %}
+                    <option value="{{ job.id }}" {% if current_job_id == job.id %}selected{% endif %}>
+                        Job #{{ job.id }} - {{ job.search_query[:40] }}{% if job.search_query|length > 40 %}...{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="state_filter" class="form-label">Filter by State</label>
+                <select class="form-select" id="state_filter" name="state">
+                    <option value="">All States</option>
+                    <!-- State options would be populated -->
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+                <a href="{{ url_for('view_results') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-building"></i> Organizations Found
+            <span class="badge bg-primary ms-2">{{ results.total }} total</span>
+        </h5>
+        <div>
+            {% if results.items %}
+            <button class="btn btn-sm btn-outline-success" onclick="exportAllResults()">
+                <i class="fas fa-download"></i> Export All
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        {% if results.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Job</th>
+                            <th>County/State</th>
+                            <th>Organization</th>
+                            <th>Description</th>
+                            <th>Contact</th>
+                            <th>Found</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results.items %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('job_status', job_id=result.job.id) }}" 
+                                   class="text-decoration-none">
+                                    Job #{{ result.job.id }}
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ result.job.search_query[:30] }}...</small>
+                            </td>
+                            <td>
+                                <strong>{{ result.county.name }}</strong><br>
+                                <small class="text-muted">{{ result.county.state.name }}</small>
+                            </td>
+                            <td>
+                                {% if result.organization_name %}
+                                    <strong>{{ result.organization_name }}</strong>
+                                    {% if result.address %}
+                                        <br><small class="text-muted">{{ result.address[:50] }}{% if result.address|length > 50 %}...{% endif %}</small>
+                                    {% endif %}
+                                {% else %}
+                                    <em class="text-muted">No organizations found</em>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if result.description %}
+                                    {{ result.description[:80] }}{% if result.description|length > 80 %}...{% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if result.contact_info and result.contact_info != '{}' %}
+                                    {% set contact = result.contact_info|from_json %}
+                                    {% if contact.phone %}
+                                        <i class="fas fa-phone text-muted"></i>
+                                    {% endif %}
+                                    {% if contact.email %}
+                                        <i class="fas fa-envelope text-muted"></i>
+                                    {% endif %}
+                                    {% if contact.website %}
+                                        <i class="fas fa-globe text-muted"></i>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ result.created_at.strftime('%m/%d/%Y') }}
+                                </small>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="viewResultDetails({{ result.id }})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <nav aria-label="Results pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if results.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('view_results', page=results.prev_num, job_id=current_job_id) }}">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-chevron-left"></i> Previous</span>
+                        </li>
+                    {% endif %}
+                    
+                    {% for page_num in results.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != results.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('view_results', page=page_num, job_id=current_job_id) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if results.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('view_results', page=results.next_num, job_id=current_job_id) }}">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Next <i class="fas fa-chevron-right"></i></span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No Results Found</h5>
+                <p class="text-muted">
+                    {% if current_job_id %}
+                        No organizations found for the selected job.
+                    {% else %}
+                        Start your first prospecting search to see results here.
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('start_search_form') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Start New Search
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Result Details Modal -->
+<div class="modal fade" id="resultDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Organization Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="resultDetailsModalBody">
+                <!-- Content loaded via JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportAllResults() {
+    const jobId = {{ current_job_id or 'null' }};
+    const exportUrl = jobId ? `/api/job/${jobId}/export` : '/api/results/export';
+    window.location.href = exportUrl;
+}
+
+function viewResultDetails(resultId) {
+    fetch(`/api/result/${resultId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('resultDetailsModalBody').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Organization</h6>
+                        <p><strong>${data.organization_name || 'N/A'}</strong></p>
+                        
+                        <h6>Description</h6>
+                        <p>${data.description || 'No description available'}</p>
+                        
+                        <h6>Address</h6>
+                        <p>${data.address || 'No address available'}</p>
+                        
+                        <h6>Location</h6>
+                        <p>${data.county_name}, ${data.state_name}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Contact Information</h6>
+                        ${data.contact_info ? 
+                            Object.entries(JSON.parse(data.contact_info))
+                                .map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`)
+                                .join('') 
+                            : '<p>No contact information available</p>'
+                        }
+                        
+                        <h6>Additional Notes</h6>
+                        <p>${data.additional_notes || 'No additional notes'}</p>
+                        
+                        <h6>Confidence Score</h6>
+                        <div class="progress mb-2">
+                            <div class="progress-bar ${data.confidence_score >= 0.8 ? 'bg-success' : data.confidence_score >= 0.6 ? 'bg-warning' : 'bg-danger'}" 
+                                 style="width: ${Math.round(data.confidence_score * 100)}%">
+                            </div>
+                        </div>
+                        <small>${Math.round(data.confidence_score * 100)}% confidence</small>
+                        
+                        <h6 class="mt-3">Found Date</h6>
+                        <p>${new Date(data.created_at).toLocaleDateString()}</p>
+                    </div>
+                </div>
+                
+                <hr>
+                <h6>Source Information</h6>
+                <p><strong>Job:</strong> #${data.job_id} - ${data.job_search_query}</p>
+                
+                <details>
+                    <summary>Raw AI Response</summary>
+                    <pre style="max-height: 200px; overflow-y: auto; font-size: 0.8em;">${data.ai_response_raw}</pre>
+                </details>
+            `;
+            
+            new bootstrap.Modal(document.getElementById('resultDetailsModal')).show();
+        })
+        .catch(console.error);
+}
+</script>
+{% endblock %}

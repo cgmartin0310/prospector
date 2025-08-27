@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Prospector{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-tachometer-alt text-primary"></i> Dashboard</h1>
+    <a href="{{ url_for('start_search_form') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> New Search
+    </a>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-search fa-2x text-primary mb-2"></i>
+                <h3>{{ stats.total_jobs }}</h3>
+                <p class="text-muted mb-0">Total Jobs</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-cog fa-spin fa-2x text-success mb-2"></i>
+                <h3>{{ stats.active_jobs }}</h3>
+                <p class="text-muted mb-0">Active Jobs</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-building fa-2x text-info mb-2"></i>
+                <h3>{{ stats.total_results }}</h3>
+                <p class="text-muted mb-0">Organizations Found</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-map-marker-alt fa-2x text-warning mb-2"></i>
+                <h3>{{ stats.states_available }}</h3>
+                <p class="text-muted mb-0">States Available</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Jobs -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-clock"></i> Recent Jobs</h5>
+        <a href="{{ url_for('view_results') }}" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <div class="card-body">
+        {% if recent_jobs %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Search Query</th>
+                            <th>State</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Progress</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in recent_jobs %}
+                        <tr>
+                            <td>
+                                <strong>{{ job.search_query[:50] }}{% if job.search_query|length > 50 %}...{% endif %}</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ job.state.name }}</span>
+                            </td>
+                            <td>
+                                <span class="status-badge status-{{ job.status }}">
+                                    {{ job.status.title() }}
+                                </span>
+                            </td>
+                            <td>{{ job.created_at.strftime('%m/%d/%Y %I:%M %p') }}</td>
+                            <td>
+                                <div class="progress" style="width: 100px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ job.progress_percentage }}%"
+                                         aria-valuenow="{{ job.progress_percentage }}" 
+                                         aria-valuemin="0" aria-valuemax="100">
+                                        {{ job.progress_percentage }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('job_status', job_id=job.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No searches yet</h5>
+                <p class="text-muted">Start your first prospecting search to see results here.</p>
+                <a href="{{ url_for('start_search_form') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Start First Search
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Start Guide -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-question-circle"></i> How it Works</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                        <h6>1. Define Your Search</h6>
+                        <p class="text-muted">Describe what type of organizations you're looking for (e.g., "overdose response teams")</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-map-marked-alt fa-3x text-success mb-3"></i>
+                        <h6>2. Select State</h6>
+                        <p class="text-muted">Choose which state to research. The system will search every county in that state.</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-robot fa-3x text-info mb-3"></i>
+                        <h6>3. AI Research</h6>
+                        <p class="text-muted">AI conducts isolated research in each county, preventing hallucination and ensuring thoroughness.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

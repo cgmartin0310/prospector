@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Prospector - AI Research Tool{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            border-radius: 10px;
+            margin: 5px 0;
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.2);
+            transform: translateX(5px);
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+        }
+        .progress {
+            height: 10px;
+            border-radius: 10px;
+        }
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .status-running { background: #28a745; color: white; }
+        .status-completed { background: #6c757d; color: white; }
+        .status-pending { background: #ffc107; color: dark; }
+        .status-failed { background: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-3">
+                <div class="text-center mb-4">
+                    <h3 class="text-white"><i class="fas fa-search"></i> Prospector</h3>
+                    <p class="text-white-50">AI Research Tool</p>
+                </div>
+                
+                <nav class="nav nav-pills flex-column">
+                    <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'start_search_form' %}active{% endif %}" href="{{ url_for('start_search_form') }}">
+                        <i class="fas fa-plus-circle me-2"></i> New Search
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'view_results' %}active{% endif %}" href="{{ url_for('view_results') }}">
+                        <i class="fas fa-list-ul me-2"></i> All Results
+                    </a>
+                </nav>
+                
+                <div class="mt-auto pt-4">
+                    <small class="text-white-50">
+                        <i class="fas fa-info-circle"></i> 
+                        Systematic AI research across US counties
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 p-4">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-refresh job status pages every 10 seconds
+        if (window.location.pathname.includes('/job/')) {
+            setInterval(function() {
+                const jobId = window.location.pathname.split('/job/')[1];
+                fetch(`/api/job/${jobId}/status`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update progress bar
+                        const progressBar = document.querySelector('.progress-bar');
+                        if (progressBar) {
+                            progressBar.style.width = data.progress.percentage + '%';
+                            progressBar.textContent = data.progress.percentage + '%';
+                        }
+                        
+                        // Update status badge
+                        const statusBadge = document.querySelector('.status-badge');
+                        if (statusBadge) {
+                            statusBadge.textContent = data.status;
+                            statusBadge.className = `status-badge status-${data.status}`;
+                        }
+                        
+                        // Update current county
+                        const currentCounty = document.querySelector('#current-county');
+                        if (currentCounty && data.current_county) {
+                            currentCounty.textContent = data.current_county;
+                        }
+                        
+                        // Update results count
+                        const resultsCount = document.querySelector('#results-count');
+                        if (resultsCount) {
+                            resultsCount.textContent = data.results_count;
+                        }
+                        
+                        // Reload page if job completed
+                        if (data.status === 'completed' || data.status === 'failed') {
+                            setTimeout(() => location.reload(), 2000);
+                        }
+                    })
+                    .catch(console.error);
+            }, 10000);
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
