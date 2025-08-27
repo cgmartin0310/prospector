@@ -75,10 +75,16 @@ def start_search():
     db.session.add(job)
     db.session.commit()
     
-    # Start the prospecting process in background
+    # Start the prospecting process in background with app context
     from services.prospector import ProspectorService
-    prospector = ProspectorService()
-    thread = threading.Thread(target=prospector.run_job, args=(job.id,))
+    
+    def run_job_with_context(job_id):
+        """Run job with Flask app context"""
+        with app.app_context():
+            prospector = ProspectorService()
+            prospector.run_job(job_id)
+    
+    thread = threading.Thread(target=run_job_with_context, args=(job.id,))
     thread.daemon = True
     thread.start()
     
