@@ -18,9 +18,25 @@ from typing import Dict, List, Optional
 class AIService:
     def __init__(self):
         if OpenAI:
-            # New OpenAI client (v1.0+)
-            self.client = OpenAI(api_key=Config.OPENAI_API_KEY)
-            self.model = "gpt-4"
+            # New OpenAI client (v1.0+) with explicit httpx client
+            try:
+                import httpx
+                # Create httpx client without problematic parameters
+                http_client = httpx.Client(timeout=30.0)
+                self.client = OpenAI(
+                    api_key=Config.OPENAI_API_KEY,
+                    http_client=http_client
+                )
+                self.model = "gpt-4"
+            except Exception as e:
+                print(f"OpenAI client initialization error: {e}")
+                # Fallback to legacy API if available
+                if 'openai' in globals():
+                    openai.api_key = Config.OPENAI_API_KEY
+                    self.client = None
+                    self.model = "gpt-4"
+                else:
+                    raise e
         else:
             # Legacy OpenAI API
             openai.api_key = Config.OPENAI_API_KEY
