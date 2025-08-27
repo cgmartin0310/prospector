@@ -15,6 +15,9 @@ class DataLoader:
         """Load US states and counties if not already present"""
         if State.query.count() == 0:
             self.load_states_and_counties()
+        else:
+            # Check if we need to add missing counties for existing states
+            self.add_missing_counties()
     
     def load_states_and_counties(self):
         """Load all US states and counties from embedded data"""
@@ -114,7 +117,8 @@ class DataLoader:
             "CA": ["Los Angeles", "San Francisco", "San Diego", "Orange", "Riverside", "Sacramento"],
             "TX": ["Harris", "Dallas", "Tarrant", "Bexar", "Travis", "Collin"],
             "FL": ["Miami-Dade", "Broward", "Palm Beach", "Hillsborough", "Orange", "Pinellas"],
-            "NY": ["New York", "Kings", "Queens", "Suffolk", "Nassau", "Bronx"]
+            "NY": ["New York", "Kings", "Queens", "Suffolk", "Nassau", "Bronx"],
+            "DE": ["New Castle", "Kent", "Sussex"]  # Delaware has only 3 counties
         }
         
         for state_abbr, counties in sample_counties.items():
@@ -127,6 +131,30 @@ class DataLoader:
         total_counties = County.query.count()
         print(f"Loaded {total_counties} counties")
         print("Data loading complete!")
+    
+    def add_missing_counties(self):
+        """Add counties for states that don't have any counties yet"""
+        sample_counties = {
+            "CA": ["Los Angeles", "San Francisco", "San Diego", "Orange", "Riverside", "Sacramento"],
+            "TX": ["Harris", "Dallas", "Tarrant", "Bexar", "Travis", "Collin"],
+            "FL": ["Miami-Dade", "Broward", "Palm Beach", "Hillsborough", "Orange", "Pinellas"],
+            "NY": ["New York", "Kings", "Queens", "Suffolk", "Nassau", "Bronx"],
+            "DE": ["New Castle", "Kent", "Sussex"]  # Delaware has only 3 counties
+        }
+        
+        for state_abbr, counties in sample_counties.items():
+            state = State.query.filter_by(abbreviation=state_abbr).first()
+            if state:
+                # Check if this state already has counties
+                existing_count = County.query.filter_by(state_id=state.id).count()
+                if existing_count == 0:
+                    print(f"Adding counties for {state.name}...")
+                    for county_name in counties:
+                        county = County(name=county_name, state_id=state.id)
+                        db.session.add(county)
+        
+        db.session.commit()
+        print("Missing counties added!")
     
     def load_full_county_data(self):
         """
