@@ -87,45 +87,8 @@ class DataLoader:
         db.session.commit()
         print(f"Loaded {len(states_data)} states")
         
-        # Sample counties for North Carolina (since that's your primary use case)
-        # In a real implementation, you'd want to load all ~3,000+ US counties
-        nc_counties = [
-            "Alamance", "Alexander", "Alleghany", "Anson", "Ashe", "Avery", "Beaufort", 
-            "Bertie", "Bladen", "Brunswick", "Buncombe", "Burke", "Cabarrus", "Caldwell", 
-            "Camden", "Carteret", "Caswell", "Catawba", "Chatham", "Cherokee", "Chowan", 
-            "Clay", "Cleveland", "Columbus", "Craven", "Cumberland", "Currituck", "Dare", 
-            "Davidson", "Davie", "Duplin", "Durham", "Edgecombe", "Forsyth", "Franklin", 
-            "Gaston", "Gates", "Graham", "Granville", "Greene", "Guilford", "Halifax", 
-            "Harnett", "Haywood", "Henderson", "Hertford", "Hoke", "Hyde", "Iredell", 
-            "Jackson", "Johnston", "Jones", "Lee", "Lenoir", "Lincoln", "McDowell", 
-            "Macon", "Madison", "Martin", "Mecklenburg", "Mitchell", "Montgomery", 
-            "Moore", "Nash", "New Hanover", "Northampton", "Onslow", "Orange", "Pamlico", 
-            "Pasquotank", "Pender", "Perquimans", "Person", "Pitt", "Polk", "Randolph", 
-            "Richmond", "Robeson", "Rockingham", "Rowan", "Rutherford", "Sampson", 
-            "Scotland", "Stanly", "Stokes", "Surry", "Swain", "Transylvania", "Tyrrell", 
-            "Union", "Vance", "Wake", "Warren", "Washington", "Watauga", "Wayne", 
-            "Wilkes", "Wilson", "Yadkin", "Yancey"
-        ]
-        
-        nc_state = state_objects["NC"]
-        for county_name in nc_counties:
-            county = County(name=county_name, state_id=nc_state.id)
-            db.session.add(county)
-        
-        # Add some sample counties for other states too
-        sample_counties = {
-            "CA": ["Los Angeles", "San Francisco", "San Diego", "Orange", "Riverside", "Sacramento"],
-            "TX": ["Harris", "Dallas", "Tarrant", "Bexar", "Travis", "Collin"],
-            "FL": ["Miami-Dade", "Broward", "Palm Beach", "Hillsborough", "Orange", "Pinellas"],
-            "NY": ["New York", "Kings", "Queens", "Suffolk", "Nassau", "Bronx"],
-            "DE": ["New Castle", "Kent", "Sussex"]  # Delaware has only 3 counties
-        }
-        
-        for state_abbr, counties in sample_counties.items():
-            state = state_objects[state_abbr]
-            for county_name in counties:
-                county = County(name=county_name, state_id=state.id)
-                db.session.add(county)
+        # Load complete county data for all states
+        self._load_all_counties(state_objects)
         
         db.session.commit()
         total_counties = County.query.count()
