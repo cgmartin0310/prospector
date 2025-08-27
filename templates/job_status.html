@@ -21,6 +21,12 @@
             <i class="fas fa-play"></i> Resume
         </button>
         {% endif %}
+        {% if job.status != 'running' %}
+        <button class="btn btn-outline-danger ms-2" 
+                onclick="deleteJobFromStatus({{ job.id }}, '{{ job.search_query[:30] }}...')">
+            <i class="fas fa-trash"></i> Delete Job
+        </button>
+        {% endif %}
     </div>
 </div>
 
@@ -287,6 +293,32 @@ function viewDetails(resultId) {
             new bootstrap.Modal(document.getElementById('resultModal')).show();
         })
         .catch(console.error);
+}
+
+function deleteJobFromStatus(jobId, jobQuery) {
+    if (confirm(`Are you sure you want to delete this job?\n\n"${jobQuery}"\n\nThis will permanently delete the job and all its results. This action cannot be undone.`)) {
+        fetch(`/api/job/${jobId}/delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                alert(data.message);
+                // Redirect to dashboard since this job no longer exists
+                window.location.href = '/';
+            } else {
+                // Show error message
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting job: ' + error.message);
+        });
+    }
 }
 </script>
 {% endblock %}

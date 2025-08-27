@@ -189,6 +189,42 @@ def api_export_job_results(job_id):
         }
     )
 
+@app.route('/api/job/<int:job_id>/delete', methods=['DELETE', 'POST'])
+def api_delete_job(job_id):
+    """Delete a job and all its associated results"""
+    try:
+        job = ProspectingJob.query.get_or_404(job_id)
+        
+        # Check if job is currently running
+        if job.status == 'running':
+            return jsonify({
+                'success': False,
+                'error': 'Cannot delete a job that is currently running. Please wait for it to complete or pause it first.'
+            }), 400
+        
+        # Delete all associated search results first (due to foreign key constraints)
+        results_count = SearchResult.query.filter_by(job_id=job_id).count()
+        SearchResult.query.filter_by(job_id=job_id).delete()
+        
+        # Delete the job
+        job_query = job.search_query[:50] + '...' if len(job.search_query) > 50 else job.search_query
+        state_name = job.state.name
+        
+        db.session.delete(job)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully deleted job "{job_query}" for {state_name} and {results_count} associated results.'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'Failed to delete job: {str(e)}'
+        }), 500
+
 def init_db():
     """Initialize database and load initial data"""
     with app.app_context():
