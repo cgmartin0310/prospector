@@ -53,7 +53,7 @@ class AIService:
         
         try:
             if self.client:
-                # GPT-5 with Chat Completions API and reasoning parameters
+                # GPT-5 with standard Chat Completions API
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=[
@@ -66,12 +66,12 @@ class AIService:
                             "content": prompt
                         }
                     ],
-                    reasoning_effort="medium",  # GPT-5 reasoning effort for balanced accuracy and speed
-                    verbosity="medium"  # GPT-5 verbosity for detailed but concise responses
+                    temperature=0.3,  # Lower temperature for more factual responses
+                    max_tokens=2000
                 )
                 raw_response = response.choices[0].message.content
             else:
-                # Legacy OpenAI API fallback with GPT-5 Chat Completions
+                # Legacy OpenAI API fallback
                 response = openai.ChatCompletion.create(
                     model=self.model,
                     messages=[
@@ -84,8 +84,8 @@ class AIService:
                             "content": prompt
                         }
                     ],
-                    reasoning_effort="medium",  # GPT-5 reasoning effort in Chat Completions API
-                    verbosity="medium"  # GPT-5 verbosity in Chat Completions API
+                    temperature=0.3,  # Lower temperature for more factual responses
+                    max_tokens=2000
                 )
                 raw_response = response.choices[0].message.content
             
