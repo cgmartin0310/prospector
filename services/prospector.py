@@ -45,15 +45,11 @@ class ProspectorService:
                     
                     print(f"Processing {county.name} County ({i+1}/{len(counties)})...")
                     
-                    # Check if we already have results for this county in this job
+                    # Check if we already have a result for this county in this job
                     existing_result = SearchResult.query.filter_by(
                         job_id=job_id, 
                         county_id=county.id
                     ).first()
-                    
-                    if existing_result:
-                        print(f"Skipping {county.name} - already processed")
-                        continue
                     
                     # Conduct AI research for this county
                     research_result = self.ai_service.research_county(
@@ -62,8 +58,8 @@ class ProspectorService:
                         job.search_query
                     )
                     
-                    # Save results to database
-                    self._save_research_results(job_id, county.id, research_result)
+                    # Save or update the result for this county
+                    self._save_or_update_county_result(job_id, county.id, research_result, existing_result)
                     
                     # Delay between searches to be respectful to AI API
                     if i < len(counties) - 1:  # Don't delay after the last county
@@ -97,78 +93,76 @@ class ProspectorService:
                 db.session.rollback()
             print(f"Job {job_id} failed: {str(e)}")
     
-    def _save_research_results(self, job_id: int, county_id: int, research_result: dict):
-        """Save the AI research results to the database"""
-        
-        if not research_result.get('success', False):
-            # Save a record indicating no results found
-            result = SearchResult(
-                job_id=job_id,
-                county_id=county_id,
-                organization_name=None,
-                description=f"Search failed: {research_result.get('error', 'Unknown error')}",
-                ai_response_raw=research_result.get('raw_response', ''),
-                confidence_score=0.0
-            )
-            db.session.add(result)
-            try:
-                db.session.commit()
-            except Exception as e:
-                db.session.rollback()
-                raise e
-            return
-        
-        organizations = research_result.get('organizations', [])
-        
-        if not organizations:
-            # Save a record indicating no results found
-            result = SearchResult(
-                job_id=job_id,
-                county_id=county_id,
-                organization_name=None,
-                description="No organizations found matching the search criteria",
-                additional_notes=research_result.get('search_summary', ''),
-                ai_response_raw=research_result.get('raw_response', ''),
-                confidence_score=0.0
-            )
-            db.session.add(result)
-        else:
-            # Save each organization found
-            for org in organizations:
-                # Handle key personnel information
-                key_personnel = org.get('key_personnel', {})
-                general_contact = org.get('general_contact', {})
-                
-                # Convert general contact to JSON string for backward compatibility
-                contact_info = json.dumps(general_contact)
-                
-                result = SearchResult(
-                    job_id=job_id,
-                    county_id=county_id,
-                    organization_name=org.get('name', 'Unknown'),
-                    description=org.get('description', ''),
-                    
-                    # Key personnel information
-                    key_personnel_name=key_personnel.get('name', ''),
-                    key_personnel_title=key_personnel.get('title', ''),
-                    key_personnel_phone=key_personnel.get('phone', ''),
-                    key_personnel_email=key_personnel.get('email', ''),
-                    
-                    # General contact information
-                    contact_info=contact_info,
-                    address=org.get('address', ''),
-                    additional_notes=org.get('notes', ''),
-                    confidence_score=org.get('confidence', 0.7),
-                    ai_response_raw=research_result.get('raw_response', '')
-                )
-                db.session.add(result)
-        
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            raise e
+
     
+    def _save_or_update_county_result(self, job_id: int, county_id: int, research_result: dict, existing_result: SearchResult):
+        """
+        Saves or updates a SearchResult for a given county.
+        If an existing result exists, it will be replaced if the new result has a higher confidence score.
+        """
+        if not research_result.get('success', False):
+            # If AI research failed, save a record indicating no results found
+            if existing_result:
+                # If an existing result exists, delete it
+                db.session.delete(existing_result)
+                db.session.commit()
+                print(f"Deleted existing result for {County.query.get(county_id).name} due to failed AI research.")
+            return
+
+        organizations = research_result.get('organizations', [])
+
+        if not organizations:
+            # If AI research found no organizations, save a record indicating no results found
+            if existing_result:
+                # If an existing result exists, delete it
+                db.session.delete(existing_result)
+                db.session.commit()
+                print(f"Deleted existing result for {County.query.get(county_id).name} due to no organizations found.")
+            return
+
+        # Find the organization with the highest confidence score
+        best_org = max(organizations, key=lambda org: org.get('confidence', 0.0))
+
+        # Convert general contact to JSON string for backward compatibility
+        contact_info = json.dumps(best_org.get('general_contact', {}))
+
+        # Prepare new result data
+        new_result_data = {
+            'job_id': job_id,
+            'county_id': county_id,
+            'organization_name': best_org.get('name', 'Unknown'),
+            'description': best_org.get('description', ''),
+            'contact_info': contact_info,
+            'address': best_org.get('address', ''),
+            'additional_notes': best_org.get('notes', ''),
+            'confidence_score': best_org.get('confidence', 0.7),
+            'ai_response_raw': research_result.get('raw_response', '')
+        }
+
+        # Handle key personnel information
+        key_personnel = best_org.get('key_personnel', {})
+        new_result_data['key_personnel_name'] = key_personnel.get('name', '')
+        new_result_data['key_personnel_title'] = key_personnel.get('title', '')
+        new_result_data['key_personnel_phone'] = key_personnel.get('phone', '')
+        new_result_data['key_personnel_email'] = key_personnel.get('email', '')
+
+        if existing_result:
+            # If an existing result exists, update it if the new one has a higher confidence score
+            if new_result_data['confidence_score'] > existing_result.confidence_score:
+                for key, value in new_result_data.items():
+                    setattr(existing_result, key, value)
+                db.session.commit()
+                print(f"Updated result for {County.query.get(county_id).name} with higher confidence score: {new_result_data['confidence_score']:.2f} > {existing_result.confidence_score:.2f}")
+            else:
+                # If the new result has a lower confidence score, keep the existing one
+                print(f"Kept existing result for {County.query.get(county_id).name} - existing confidence {existing_result.confidence_score:.2f} >= new confidence {new_result_data['confidence_score']:.2f}")
+        else:
+            # If no existing result, save the new one
+            result = SearchResult(**new_result_data)
+            db.session.add(result)
+            db.session.commit()
+            print(f"Saved new result for {County.query.get(county_id).name}.")
+
     def pause_job(self, job_id: int):
         """Pause a running job"""
         job = ProspectingJob.query.get(job_id)
