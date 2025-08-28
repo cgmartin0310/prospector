@@ -27,21 +27,21 @@ class AIService:
                     api_key=Config.OPENAI_API_KEY,
                     http_client=http_client
                 )
-                self.model = "gpt-5"  # Latest GPT-5 model with advanced reasoning
+                self.model = "gpt-4o"  # Latest GPT-4 model (proven reliable)
             except Exception as e:
                 print(f"OpenAI client initialization error: {e}")
                 # Fallback to legacy API if available
                 if 'openai' in globals():
                     openai.api_key = Config.OPENAI_API_KEY
                     self.client = None
-                    self.model = "gpt-5"  # Latest GPT-5 model with advanced reasoning
+                    self.model = "gpt-4o"  # Latest GPT-4 model (proven reliable)
                 else:
                     raise e
         else:
             # Legacy OpenAI API
             openai.api_key = Config.OPENAI_API_KEY
             self.client = None
-            self.model = "gpt-5"
+            self.model = "gpt-4o"
     
     def research_county(self, county_name: str, state_name: str, search_query: str) -> Dict:
         """
@@ -53,7 +53,7 @@ class AIService:
         
         try:
             if self.client:
-                # GPT-5 with Chat Completions API
+                # GPT-4o with Chat Completions API
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=[
@@ -65,7 +65,8 @@ class AIService:
                             "role": "user",
                             "content": prompt
                         }
-                    ]
+                    ],
+                    temperature=0.3  # Lower temperature for more factual responses
                 )
                 raw_response = response.choices[0].message.content
             else:
@@ -81,7 +82,8 @@ class AIService:
                             "role": "user",
                             "content": prompt
                         }
-                    ]
+                    ],
+                    temperature=0.3
                 )
                 raw_response = response.choices[0].message.content
             
