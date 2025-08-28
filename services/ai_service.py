@@ -65,8 +65,7 @@ class AIService:
                             "role": "user",
                             "content": prompt
                         }
-                    ],
-                    temperature=0.3  # Lower temperature for more factual responses
+                    ]
                 )
                 raw_response = response.choices[0].message.content
             else:
@@ -82,8 +81,7 @@ class AIService:
                             "role": "user",
                             "content": prompt
                         }
-                    ],
-                    temperature=0.3  # Lower temperature for more factual responses
+                    ]
                 )
                 raw_response = response.choices[0].message.content
             
