@@ -12,11 +12,15 @@ except ImportError:
 
 import json
 import time
+import os
 from config import Config
 from typing import Dict, List, Optional
 
 class AIService:
-    def __init__(self):
+    def __init__(self, model_name: str = None):
+        # Allow model to be configurable via environment variable or parameter
+        self.model = model_name or os.environ.get('OPENAI_MODEL', 'gpt-4o')
+        
         if OpenAI:
             # New OpenAI client (v1.0+) with explicit httpx client
             try:
@@ -27,21 +31,18 @@ class AIService:
                     api_key=Config.OPENAI_API_KEY,
                     http_client=http_client
                 )
-                self.model = "gpt-4"
             except Exception as e:
                 print(f"OpenAI client initialization error: {e}")
                 # Fallback to legacy API if available
                 if 'openai' in globals():
                     openai.api_key = Config.OPENAI_API_KEY
                     self.client = None
-                    self.model = "gpt-4"
                 else:
                     raise e
         else:
             # Legacy OpenAI API
             openai.api_key = Config.OPENAI_API_KEY
             self.client = None
-            self.model = "gpt-4"
     
     def research_county(self, county_name: str, state_name: str, search_query: str) -> Dict:
         """
@@ -52,6 +53,10 @@ class AIService:
         prompt = self._build_research_prompt(county_name, state_name, search_query)
         
         try:
+            # Adjust parameters based on model
+            temperature = 0.1 if 'gpt-4o' in self.model else 0.3
+            max_tokens = 4000 if 'gpt-4o' in self.model else 2000
+            
             if self.client:
                 # New OpenAI client API
                 response = self.client.chat.completions.create(
@@ -59,15 +64,16 @@ class AIService:
                     messages=[
                         {
                             "role": "system",
-                            "content": "You are a thorough researcher specializing in finding public health and social service organizations. Provide accurate, factual information based on real organizations. If you cannot find specific information, clearly state that rather than making assumptions."
+                            "content": "You are a thorough researcher specializing in finding public health and social service organizations. You must respond with valid JSON format as specified in the user's request. Be factual and accurate - if you cannot find specific information, clearly state that rather than making assumptions."
                         },
                         {
                             "role": "user",
                             "content": prompt
                         }
                     ],
-                    temperature=0.3,  # Lower temperature for more factual responses
-                    max_tokens=2000
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    response_format={"type": "json_object"}  # Force JSON response for GPT-4o
                 )
                 raw_response = response.choices[0].message.content
             else:
@@ -77,21 +83,22 @@ class AIService:
                     messages=[
                         {
                             "role": "system",
-                            "content": "You are a thorough researcher specializing in finding public health and social service organizations. Provide accurate, factual information based on real organizations. If you cannot find specific information, clearly state that rather than making assumptions."
+                            "content": "You are a thorough researcher specializing in finding public health and social service organizations. You must respond with valid JSON format as specified in the user's request. Be factual and accurate - if you cannot find specific information, clearly state that rather than making assumptions."
                         },
                         {
                             "role": "user",
                             "content": prompt
                         }
                     ],
-                    temperature=0.3,  # Lower temperature for more factual responses
-                    max_tokens=2000
+                    temperature=temperature,
+                    max_tokens=max_tokens
                 )
                 raw_response = response.choices[0].message.content
             
             return self._parse_ai_response(raw_response, county_name, state_name)
             
         except Exception as e:
+            print(f"AI research error for {county_name}, {state_name}: {str(e)}")
             return {
                 "success": False,
                 "error": str(e),
@@ -104,41 +111,38 @@ class AIService:
         """Build a detailed research prompt for the AI"""
         
         prompt = f"""
-Please research and find information about organizations in {county_name} County, {state_name} that match this description: "{search_query}"
+Research organizations in {county_name} County, {state_name} that match: "{search_query}"
 
-Focus specifically on {county_name} County. Do not include organizations from other counties unless they explicitly serve {county_name} County.
+IMPORTANT: Focus ONLY on {county_name} County. Do not include organizations from other counties unless they explicitly serve {county_name} County.
 
-For each organization you find, please provide:
-1. Organization name
-2. Brief description of services
-3. Contact information (phone, email, website if available)
-4. Physical address if available
-5. Any additional relevant notes
+For each organization found, provide:
+- name: Organization name
+- description: Brief description of services
+- contact: Object with phone, email, website (use null if not available)
+- address: Physical address (use null if not available)
+- notes: Additional relevant information
+- confidence: Number between 0.0 and 1.0 indicating your confidence
 
-Please format your response as a JSON array of organizations, like this:
-```json
+If no organizations are found, return an empty organizations array.
+
+Respond with ONLY valid JSON in this exact format:
 {{
   "organizations": [
     {{
       "name": "Organization Name",
-      "description": "Brief description of what they do",
+      "description": "What they do",
       "contact": {{
-        "phone": "phone number if available",
-        "email": "email if available", 
-        "website": "website if available"
+        "phone": "phone number or null",
+        "email": "email or null",
+        "website": "website or null"
       }},
-      "address": "physical address if available",
-      "notes": "any additional relevant information",
+      "address": "address or null",
+      "notes": "additional info or null",
       "confidence": 0.9
     }}
   ],
-  "search_summary": "Brief summary of your search process and findings"
+  "search_summary": "Brief summary of search process and findings"
 }}
-```
-
-If you cannot find any organizations matching the criteria in {county_name} County, please return an empty organizations array and explain in the search_summary.
-
-Be thorough but factual. Only include organizations you can verify exist.
 """
         return prompt
     
