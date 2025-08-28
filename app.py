@@ -594,6 +594,107 @@ def api_map_start_search(state_abbr):
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
+@app.route('/api/county/<int:county_id>/search', methods=['POST'])
+def api_county_search(county_id):
+    """Search a specific county using AI"""
+    try:
+        data = request.get_json()
+        search_query = data.get('search_query', 'overdose response team')
+        
+        county = County.query.get_or_404(county_id)
+        
+        # Perform AI research for this county
+        from services.ai_service import AIService
+        ai_service = AIService()
+        
+        research_result = ai_service.research_county(
+            county_name=county.name,
+            state_name=county.state.name,
+            search_query=search_query
+        )
+        
+        if research_result.get('success', False):
+            # Find existing result for this county (if any)
+            existing_result = SearchResult.query.filter_by(county_id=county_id).first()
+            
+            if existing_result:
+                # Update existing result
+                if research_result.get('organizations'):
+                    best_org = max(research_result['organizations'], key=lambda x: x.get('confidence_score', 0))
+                    existing_result.organization_name = best_org.get('organization_name')
+                    existing_result.description = best_org.get('description')
+                    existing_result.key_personnel_name = best_org.get('key_personnel_name')
+                    existing_result.key_personnel_title = best_org.get('key_personnel_title')
+                    existing_result.key_personnel_phone = best_org.get('key_personnel_phone')
+                    existing_result.key_personnel_email = best_org.get('key_personnel_email')
+                    existing_result.contact_info = json.dumps(best_org.get('contact_info', {}))
+                    existing_result.address = best_org.get('address')
+                    existing_result.confidence_score = best_org.get('confidence_score', 0.0)
+                    existing_result.ai_response_raw = research_result.get('ai_response_raw', '')
+                    existing_result.additional_notes = best_org.get('additional_notes')
+                else:
+                    # No organizations found, clear the result
+                    existing_result.organization_name = None
+                    existing_result.description = None
+                    existing_result.key_personnel_name = None
+                    existing_result.key_personnel_title = None
+                    existing_result.key_personnel_phone = None
+                    existing_result.key_personnel_email = None
+                    existing_result.contact_info = '{}'
+                    existing_result.address = None
+                    existing_result.confidence_score = 0.0
+                    existing_result.ai_response_raw = research_result.get('ai_response_raw', '')
+                    existing_result.additional_notes = None
+                
+                db.session.commit()
+                message = f"Updated result for {county.name} County"
+            else:
+                # Create new result
+                if research_result.get('organizations'):
+                    best_org = max(research_result['organizations'], key=lambda x: x.get('confidence_score', 0))
+                    new_result = SearchResult(
+                        county_id=county_id,
+                        organization_name=best_org.get('organization_name'),
+                        description=best_org.get('description'),
+                        key_personnel_name=best_org.get('key_personnel_name'),
+                        key_personnel_title=best_org.get('key_personnel_title'),
+                        key_personnel_phone=best_org.get('key_personnel_phone'),
+                        key_personnel_email=best_org.get('key_personnel_email'),
+                        contact_info=json.dumps(best_org.get('contact_info', {})),
+                        address=best_org.get('address'),
+                        confidence_score=best_org.get('confidence_score', 0.0),
+                        ai_response_raw=research_result.get('ai_response_raw', ''),
+                        additional_notes=best_org.get('additional_notes')
+                    )
+                    db.session.add(new_result)
+                    db.session.commit()
+                    message = f"Found {len(research_result['organizations'])} organization(s) in {county.name} County"
+                else:
+                    # Create a "no results" record
+                    new_result = SearchResult(
+                        county_id=county_id,
+                        organization_name=None,
+                        confidence_score=0.0,
+                        ai_response_raw=research_result.get('ai_response_raw', '')
+                    )
+                    db.session.add(new_result)
+                    db.session.commit()
+                    message = f"No organizations found in {county.name} County"
+            
+            return jsonify({
+                "success": True,
+                "message": message,
+                "organizations_found": len(research_result.get('organizations', []))
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": research_result.get('error', 'AI research failed')
+            })
+            
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     """Serve static files including GeoJSON"""

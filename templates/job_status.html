@@ -195,6 +195,11 @@
                                                 title="View Details">
                                             <i class="fas fa-eye"></i>
                                         </button>
+                                        <button class="btn btn-sm btn-outline-success me-1" 
+                                                onclick="searchCounty({{ result.county.id }}, '{{ result.county.name }}', '{{ job.search_query }}')"
+                                                title="Search This County Again">
+                                            <i class="fas fa-search"></i>
+                                        </button>
                                         {% if job.status != 'running' %}
                                         <button class="btn btn-sm btn-outline-danger" 
                                                 onclick="deleteResult({{ result.id }}, '{{ result.organization_name or 'Unknown Organization' }}', '{{ result.county.name }}')"
@@ -372,6 +377,47 @@ function viewDetails(resultId) {
             new bootstrap.Modal(document.getElementById('resultModal')).show();
         })
         .catch(console.error);
+}
+
+function searchCounty(countyId, countyName, searchQuery) {
+    if (confirm(`Search ${countyName} County again?\n\nThis will perform a fresh AI search for: "${searchQuery}"\n\nThe existing result for this county will be updated with any new findings.`)) {
+        // Show loading state
+        const button = event.target.closest('button');
+        const originalContent = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.disabled = true;
+        
+        fetch(`/api/county/${countyId}/search`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                search_query: searchQuery
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                alert(`Search completed for ${countyName} County!\n\n${data.message}`);
+                // Reload the page to show updated results
+                window.location.reload();
+            } else {
+                // Show error message
+                alert('Error: ' + data.error);
+                // Reset button
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            alert('Error searching county: ' + error.message);
+            // Reset button
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        });
+    }
 }
 
 function deleteResult(resultId, organizationName, countyName) {
