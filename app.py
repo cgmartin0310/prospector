@@ -456,3 +456,23 @@ def populate_all_counties():
             "success": False,
             "error": str(e)
         }), 500
+
+@app.route('/admin/migrate-database')
+def admin_migrate_database():
+    """Admin endpoint to run database migration for new key personnel columns"""
+    try:
+        from migrate_database import migrate_database
+        
+        # Run the migration
+        migrate_database()
+        
+        return jsonify({
+            "success": True,
+            "message": "Database migration completed successfully! New key personnel columns have been added."
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
