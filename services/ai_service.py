@@ -54,16 +54,20 @@ class AIService:
         
         try:
             # Adjust parameters based on model
+            # Allow temperature override via environment variable
+            custom_temperature = os.environ.get('TEMPERATURE')
+            
             if 'gpt-5' in self.model:
                 # GPT-5 uses responses API - no temperature parameter available
                 max_tokens = 6000  # GPT-5 can handle more tokens
                 use_responses_api = True  # Use the new responses API for GPT-5
+                temperature = None  # Not used for GPT-5
             elif 'gpt-4o' in self.model:
-                temperature = 0.2  # Slightly increased for better results
+                temperature = float(custom_temperature) if custom_temperature else 0.2  # Slightly increased for better results
                 max_tokens = 4000
                 use_responses_api = False
             else:
-                temperature = 0.3
+                temperature = float(custom_temperature) if custom_temperature else 0.3
                 max_tokens = 2000
                 use_responses_api = False
             
