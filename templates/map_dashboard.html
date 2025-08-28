@@ -203,6 +203,41 @@
     .fallback-message .btn {
         margin-top: 20px;
     }
+    
+    .simple-test {
+        background: #e9ecef;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .test-button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 10px;
+    }
+    
+    .test-result {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+    
+    .test-success {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .test-error {
+        background: #f8d7da;
+        color: #721c24;
+    }
 </style>
 {% endblock %}
 
@@ -215,6 +250,16 @@
                 <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Dashboard
                 </a>
+            </div>
+            
+            <!-- Simple JavaScript Test -->
+            <div class="simple-test">
+                <h4>JavaScript Test</h4>
+                <p>Let's test if JavaScript is working on Render:</p>
+                <button class="test-button" onclick="testBasicJS()">Test Basic JavaScript</button>
+                <button class="test-button" onclick="testFetch()">Test API Fetch</button>
+                <button class="test-button" onclick="testLeaflet()">Test Leaflet Library</button>
+                <div id="test-results"></div>
             </div>
             
             <div id="map-container">
@@ -278,6 +323,41 @@
 
 {% block extra_scripts %}
 <script>
+// Test functions
+function testBasicJS() {
+    const results = document.getElementById('test-results');
+    try {
+        const testElement = document.createElement('div');
+        testElement.textContent = 'JavaScript is working!';
+        results.innerHTML = '<div class="test-result test-success">✅ Basic JavaScript is working</div>';
+    } catch (error) {
+        results.innerHTML = '<div class="test-result test-error">❌ Basic JavaScript failed: ' + error.message + '</div>';
+    }
+}
+
+function testFetch() {
+    const results = document.getElementById('test-results');
+    results.innerHTML = '<div class="test-result">🔄 Testing API fetch...</div>';
+    
+    fetch('/api/map/states')
+        .then(response => response.json())
+        .then(data => {
+            results.innerHTML = '<div class="test-result test-success">✅ API fetch working! Got ' + (data.data ? data.data.length : 0) + ' states</div>';
+        })
+        .catch(error => {
+            results.innerHTML = '<div class="test-result test-error">❌ API fetch failed: ' + error.message + '</div>';
+        });
+}
+
+function testLeaflet() {
+    const results = document.getElementById('test-results');
+    if (typeof L === 'undefined') {
+        results.innerHTML = '<div class="test-result test-error">❌ Leaflet library not loaded</div>';
+    } else {
+        results.innerHTML = '<div class="test-result test-success">✅ Leaflet library is available</div>';
+    }
+}
+
 // Check if Leaflet is available
 function checkLeaflet() {
     if (typeof L === 'undefined') {
