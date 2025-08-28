@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from flask import Flask
 from models import db
 from config import Config
+from sqlalchemy import text
 
 # Load environment variables
 load_dotenv()
@@ -51,13 +52,13 @@ def migrate_database():
             # Add each column
             for column in columns_to_add:
                 if column == 'key_personnel_name':
-                    sql = "ALTER TABLE search_result ADD COLUMN key_personnel_name VARCHAR(200)"
+                    sql = text("ALTER TABLE search_result ADD COLUMN key_personnel_name VARCHAR(200)")
                 elif column == 'key_personnel_title':
-                    sql = "ALTER TABLE search_result ADD COLUMN key_personnel_title VARCHAR(100)"
+                    sql = text("ALTER TABLE search_result ADD COLUMN key_personnel_title VARCHAR(100)")
                 elif column == 'key_personnel_phone':
-                    sql = "ALTER TABLE search_result ADD COLUMN key_personnel_phone VARCHAR(50)"
+                    sql = text("ALTER TABLE search_result ADD COLUMN key_personnel_phone VARCHAR(50)")
                 elif column == 'key_personnel_email':
-                    sql = "ALTER TABLE search_result ADD COLUMN key_personnel_email VARCHAR(200)"
+                    sql = text("ALTER TABLE search_result ADD COLUMN key_personnel_email VARCHAR(200)")
                 
                 print(f"  Adding {column}...")
                 db.session.execute(sql)
