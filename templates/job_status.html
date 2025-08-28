@@ -57,7 +57,7 @@
                                 {% if job.current_county %}
                                 <strong>Current County:</strong> <span id="current-county">{{ job.current_county }}</span><br>
                                 {% endif %}
-                                <strong>Results Found:</strong> <span id="results-count">{{ results|length }}</span>
+                                <strong>Organizations Found:</strong> <span id="results-count">{{ results|selectattr('organization_name')|list|length }}</span>
                             </div>
                         </div>
                     </div>
@@ -73,8 +73,8 @@
                         </div>
                         <small class="text-muted">
                             {% set total_counties = job.state.counties|length %}
-                            {% set processed = results|length %}
-                            {{ processed }} of {{ total_counties }} counties processed
+                            {% set processed_counties = results|map(attribute='county_id')|unique|list|length %}
+                            {{ processed_counties }} of {{ total_counties }} counties processed
                         </small>
                     </div>
                 </div>
@@ -107,7 +107,7 @@
                         <i class="fas fa-download"></i> Export CSV
                     </button>
                     {% endif %}
-                    <span class="badge bg-primary">{{ results|length }} results</span>
+                    <span class="badge bg-primary">{{ results|selectattr('organization_name')|list|length }} organizations</span>
                 </div>
             </div>
             <div class="card-body">

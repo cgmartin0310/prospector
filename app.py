@@ -118,7 +118,7 @@ def api_job_status(job_id):
             'percentage': round((counties_processed / counties_total) * 100, 1) if counties_total > 0 else 0
         },
         'current_county': job.current_county,
-        'results_count': SearchResult.query.filter_by(job_id=job_id).count()
+        'results_count': SearchResult.query.filter_by(job_id=job_id).filter(SearchResult.organization_name.isnot(None)).count()
     })
 
 @app.route('/results')
