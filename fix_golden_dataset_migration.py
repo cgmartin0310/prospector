@@ -1,70 +1,42 @@
 #!/usr/bin/env python3
 """
-Database migration script to add key personnel columns to the search_result table.
-This script should be run on the Render deployment to update the database schema.
+PostgreSQL-specific migration to fix Golden Dataset database issues
 """
 
 import os
-from dotenv import load_dotenv
-from flask import Flask
-from models import db
-from config import Config
-from sqlalchemy import text
+import sys
+from sqlalchemy import text, inspect
 
-# Load environment variables
-load_dotenv()
+# Add the current directory to Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Create Flask app context
-app = Flask(__name__)
-app.config.from_object(Config)
-db.init_app(app)
+from app import app, db
 
-def migrate_database():
-    """Add new key personnel columns and Golden Dataset functionality to the database"""
-    
+def fix_golden_dataset_migration():
+    """Fix the Golden Dataset migration for PostgreSQL"""
     with app.app_context():
         try:
-            print("🔧 Starting database migration...")
+            print("🔧 Starting PostgreSQL Golden Dataset migration fix...")
             
-            # Check if columns already exist in search_result table
-            inspector = db.inspect(db.engine)
+            # Check current table structure
+            inspector = inspect(db.engine)
             columns = [col['name'] for col in inspector.get_columns('search_result')]
-            
             print(f"Current columns in search_result table: {columns}")
             
-            # Define the new columns to add to search_result
-            new_columns = [
-                'key_personnel_name',
-                'key_personnel_title', 
-                'key_personnel_phone',
-                'key_personnel_email',
-                'is_golden'
-            ]
-            
-            # Check which columns need to be added
-            columns_to_add = [col for col in new_columns if col not in columns]
-            
-            if columns_to_add:
-                print(f"📝 Adding columns to search_result: {columns_to_add}")
+            # Check if is_golden column exists
+            if 'is_golden' not in columns:
+                print("📝 Adding is_golden column to search_result table...")
                 
-                # Add each column with PostgreSQL-specific syntax
-                for column in columns_to_add:
-                    if column == 'key_personnel_name':
-                        sql = text("ALTER TABLE search_result ADD COLUMN IF NOT EXISTS key_personnel_name VARCHAR(200)")
-                    elif column == 'key_personnel_title':
-                        sql = text("ALTER TABLE search_result ADD COLUMN IF NOT EXISTS key_personnel_title VARCHAR(100)")
-                    elif column == 'key_personnel_phone':
-                        sql = text("ALTER TABLE search_result ADD COLUMN IF NOT EXISTS key_personnel_phone VARCHAR(50)")
-                    elif column == 'key_personnel_email':
-                        sql = text("ALTER TABLE search_result ADD COLUMN IF NOT EXISTS key_personnel_email VARCHAR(200)")
-                    elif column == 'is_golden':
-                        sql = text("ALTER TABLE search_result ADD COLUMN IF NOT EXISTS is_golden BOOLEAN DEFAULT FALSE")
-                    
-                    print(f"  Adding {column}...")
-                    db.session.execute(sql)
-                    print(f"  ✅ Added {column}")
+                # Use PostgreSQL-specific syntax
+                db.session.execute(text("""
+                    ALTER TABLE search_result 
+                    ADD COLUMN is_golden BOOLEAN DEFAULT FALSE
+                """))
+                
+                db.session.commit()
+                print("✅ Added is_golden column successfully")
             else:
-                print("✅ All search_result columns already exist.")
+                print("✅ is_golden column already exists")
             
             # Check if golden_result table exists
             tables = inspector.get_table_names()
@@ -73,7 +45,7 @@ def migrate_database():
                 
                 # Create golden_result table with PostgreSQL syntax
                 db.session.execute(text("""
-                    CREATE TABLE IF NOT EXISTS golden_result (
+                    CREATE TABLE golden_result (
                         id SERIAL PRIMARY KEY,
                         organization_name VARCHAR(200) NOT NULL,
                         description TEXT,
@@ -102,10 +74,11 @@ def migrate_database():
                 
                 print("✅ Created golden_result table")
             else:
-                print("✅ golden_result table already exists.")
+                print("✅ golden_result table already exists")
             
-            # Create indexes for better performance (with IF NOT EXISTS)
+            # Create indexes if they don't exist
             print("📝 Creating indexes...")
+            
             try:
                 db.session.execute(text("""
                     CREATE INDEX IF NOT EXISTS idx_golden_result_county_id 
@@ -142,21 +115,30 @@ def migrate_database():
             except Exception as e:
                 print(f"⚠️ is_golden index creation failed: {e}")
             
-            # Commit the changes
             db.session.commit()
-            print("✅ Database migration completed successfully!")
+            print("✅ PostgreSQL Golden Dataset migration completed successfully!")
             
-            # Show statistics
+            # Verify the changes
+            inspector = inspect(db.engine)
+            updated_columns = [col['name'] for col in inspector.get_columns('search_result')]
+            print(f"Updated columns in search_result table: {updated_columns}")
+            
+            updated_tables = inspector.get_table_names()
+            print(f"Available tables: {updated_tables}")
+            
+            # Test query
             try:
                 golden_count = db.session.execute(text("SELECT COUNT(*) FROM golden_result")).scalar()
                 print(f"📊 Golden results in database: {golden_count}")
             except Exception as e:
-                print(f"📊 Golden results table not accessible yet: {e}")
+                print(f"⚠️ Could not query golden_result table: {e}")
             
         except Exception as e:
             db.session.rollback()
             print(f"❌ Migration failed: {str(e)}")
-            raise e
+            raise
 
 if __name__ == "__main__":
-    migrate_database()
+    print("🔄 Starting PostgreSQL Golden Dataset migration fix...")
+    fix_golden_dataset_migration()
+    print("🎉 Migration fix completed!")
