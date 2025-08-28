@@ -54,28 +54,48 @@ class AIService:
         
         try:
             # Adjust parameters based on model
-            temperature = 0.1 if 'gpt-4o' in self.model else 0.3
-            max_tokens = 4000 if 'gpt-4o' in self.model else 2000
+            if 'gpt-5' in self.model:
+                temperature = 0.1  # Very precise for GPT-5
+                max_tokens = 6000  # GPT-5 can handle more tokens
+                use_responses_api = True  # Use the new responses API for GPT-5
+            elif 'gpt-4o' in self.model:
+                temperature = 0.1
+                max_tokens = 4000
+                use_responses_api = False
+            else:
+                temperature = 0.3
+                max_tokens = 2000
+                use_responses_api = False
             
             if self.client:
-                # New OpenAI client API
-                response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are a thorough researcher specializing in finding public health and social service organizations. You must respond with valid JSON format as specified in the user's request. Be factual and accurate - if you cannot find specific information, clearly state that rather than making assumptions."
-                        },
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ],
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    response_format={"type": "json_object"}  # Force JSON response for GPT-4o
-                )
-                raw_response = response.choices[0].message.content
+                if use_responses_api and 'gpt-5' in self.model:
+                    # Use the new responses API for GPT-5
+                    response = self.client.responses.create(
+                        model=self.model,
+                        input=prompt,
+                        max_tokens=max_tokens,
+                        temperature=temperature
+                    )
+                    raw_response = response.output_text
+                else:
+                    # Use chat completions API for other models
+                    response = self.client.chat.completions.create(
+                        model=self.model,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": "You are a thorough researcher specializing in finding public health and social service organizations. You must respond with valid JSON format as specified in the user's request. Be factual and accurate - if you cannot find specific information, clearly state that rather than making assumptions."
+                            },
+                            {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ],
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        response_format={"type": "json_object"} if not use_responses_api else None
+                    )
+                    raw_response = response.choices[0].message.content
             else:
                 # Legacy OpenAI API
                 response = openai.ChatCompletion.create(
@@ -110,7 +130,48 @@ class AIService:
     def _build_research_prompt(self, county_name: str, state_name: str, search_query: str) -> str:
         """Build a detailed research prompt for the AI"""
         
-        prompt = f"""
+        if 'gpt-5' in self.model:
+            # GPT-5 specific prompt - more detailed and structured
+            prompt = f"""
+You are a professional researcher tasked with finding organizations in {county_name} County, {state_name} that match this specific criteria: "{search_query}"
+
+CRITICAL REQUIREMENTS:
+1. Focus EXCLUSIVELY on {county_name} County. Do not include organizations from other counties unless they explicitly serve {county_name} County.
+2. Be thorough and systematic in your research approach.
+3. Only include organizations you can verify exist.
+4. If no organizations are found, clearly state this.
+
+For each organization you find, provide complete information in this exact JSON format:
+
+{{
+  "organizations": [
+    {{
+      "name": "Full organization name",
+      "description": "Detailed description of services and mission",
+      "contact": {{
+        "phone": "phone number or null",
+        "email": "email address or null", 
+        "website": "website URL or null"
+      }},
+      "address": "full physical address or null",
+      "notes": "any additional relevant information or null",
+      "confidence": 0.95
+    }}
+  ],
+  "search_summary": "Comprehensive summary of your research process, sources consulted, and findings"
+}}
+
+If no organizations are found, return:
+{{
+  "organizations": [],
+  "search_summary": "No organizations matching '{search_query}' were found in {county_name} County, {state_name} after thorough research."
+}}
+
+Respond with ONLY valid JSON in the exact format specified above.
+"""
+        else:
+            # Standard prompt for GPT-4o and other models
+            prompt = f"""
 Research organizations in {county_name} County, {state_name} that match: "{search_query}"
 
 IMPORTANT: Focus ONLY on {county_name} County. Do not include organizations from other counties unless they explicitly serve {county_name} County.
