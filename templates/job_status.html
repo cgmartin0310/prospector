@@ -125,7 +125,7 @@
                                     <th>County</th>
                                     <th>Organization</th>
                                     <th>Description</th>
-                                    <th>Contact</th>
+                                    <th>Key Personnel / Contact</th>
                                     <th>Confidence</th>
                                     <th>Actions</th>
                                 </tr>
@@ -153,8 +153,18 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if result.contact_info and result.contact_info != '{}' %}
+                                        {% if result.key_personnel_name %}
+                                            <strong>{{ result.key_personnel_name }}</strong><br>
+                                            <small class="text-muted">{{ result.key_personnel_title }}</small><br>
+                                            {% if result.key_personnel_phone %}
+                                                <i class="fas fa-phone text-success"></i> {{ result.key_personnel_phone }}<br>
+                                            {% endif %}
+                                            {% if result.key_personnel_email %}
+                                                <i class="fas fa-envelope text-primary"></i> {{ result.key_personnel_email }}
+                                            {% endif %}
+                                        {% elif result.contact_info and result.contact_info != '{}' %}
                                             {% set contact = result.contact_info|from_json %}
+                                            <small class="text-muted">General Contact:</small><br>
                                             {% if contact.phone %}
                                                 <i class="fas fa-phone"></i> {{ contact.phone }}<br>
                                             {% endif %}

@@ -73,7 +73,15 @@ class SearchResult(db.Model):
     # Result data
     organization_name = db.Column(db.String(200))
     description = db.Column(db.Text)
-    contact_info = db.Column(db.Text)  # JSON string with phone, email, website, etc.
+    
+    # Key personnel information (NEW)
+    key_personnel_name = db.Column(db.String(200))  # Name of director/manager/coordinator
+    key_personnel_title = db.Column(db.String(100))  # Their title
+    key_personnel_phone = db.Column(db.String(50))   # Direct phone number
+    key_personnel_email = db.Column(db.String(200))  # Direct email address
+    
+    # General contact information (UPDATED)
+    contact_info = db.Column(db.Text)  # JSON string with general phone, email, website, etc.
     address = db.Column(db.Text)
     additional_notes = db.Column(db.Text)
     

@@ -140,6 +140,7 @@ CRITICAL REQUIREMENTS:
 2. Be thorough and systematic in your research approach.
 3. Only include organizations you can verify exist.
 4. If no organizations are found, clearly state this.
+5. PRIORITY: Find the key personnel (director, manager, coordinator, head) of each organization and their direct contact information.
 
 For each organization you find, provide complete information in this exact JSON format:
 
@@ -148,18 +149,26 @@ For each organization you find, provide complete information in this exact JSON 
     {{
       "name": "Full organization name",
       "description": "Detailed description of services and mission",
-      "contact": {{
-        "phone": "phone number or null",
-        "email": "email address or null", 
-        "website": "website URL or null"
+      "key_personnel": {{
+        "name": "Name of director/manager/coordinator",
+        "title": "Their specific title (e.g., Director, Manager, Coordinator)",
+        "phone": "Direct phone number or null",
+        "email": "Direct email address or null"
+      }},
+      "general_contact": {{
+        "phone": "General organization phone or null",
+        "email": "General organization email or null", 
+        "website": "Organization website URL or null"
       }},
       "address": "full physical address or null",
-      "notes": "any additional relevant information or null",
+      "notes": "any additional relevant information about the organization or key personnel or null",
       "confidence": 0.95
     }}
   ],
   "search_summary": "Comprehensive summary of your research process, sources consulted, and findings"
 }}
+
+IMPORTANT: Focus on finding the specific person in charge (director, manager, coordinator, head) of each organization and their direct contact information. This is more valuable than general organization contact info.
 
 If no organizations are found, return:
 {{
@@ -176,10 +185,13 @@ Research organizations in {county_name} County, {state_name} that match: "{searc
 
 IMPORTANT: Focus ONLY on {county_name} County. Do not include organizations from other counties unless they explicitly serve {county_name} County.
 
+PRIORITY: Find the key personnel (director, manager, coordinator, head) of each organization and their direct contact information.
+
 For each organization found, provide:
 - name: Organization name
 - description: Brief description of services
-- contact: Object with phone, email, website (use null if not available)
+- key_personnel: Object with name, title, phone, email of the person in charge
+- general_contact: Object with general organization phone, email, website
 - address: Physical address (use null if not available)
 - notes: Additional relevant information
 - confidence: Number between 0.0 and 1.0 indicating your confidence
@@ -192,9 +204,15 @@ Respond with ONLY valid JSON in this exact format:
     {{
       "name": "Organization Name",
       "description": "What they do",
-      "contact": {{
-        "phone": "phone number or null",
-        "email": "email or null",
+      "key_personnel": {{
+        "name": "Name of director/manager/coordinator",
+        "title": "Their title (e.g., Director, Manager, Coordinator)",
+        "phone": "Direct phone number or null",
+        "email": "Direct email address or null"
+      }},
+      "general_contact": {{
+        "phone": "General organization phone or null",
+        "email": "General organization email or null",
         "website": "website or null"
       }},
       "address": "address or null",

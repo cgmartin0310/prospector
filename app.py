@@ -155,7 +155,12 @@ def api_result_details(result_id):
         'county_name': result.county.name,
         'state_name': result.county.state.name,
         'job_id': result.job_id,
-        'job_search_query': result.job.search_query
+        'job_search_query': result.job.search_query,
+        # Key personnel information
+        'key_personnel_name': result.key_personnel_name,
+        'key_personnel_title': result.key_personnel_title,
+        'key_personnel_phone': result.key_personnel_phone,
+        'key_personnel_email': result.key_personnel_email
     })
 
 @app.route('/api/job/<int:job_id>/export')
@@ -174,19 +179,34 @@ def api_export_job_results(job_id):
     # Write header
     writer.writerow([
         'County', 'State', 'Organization Name', 'Description', 
-        'Address', 'Contact Info', 'Additional Notes', 
+        'Key Personnel Name', 'Key Personnel Title', 'Key Personnel Phone', 'Key Personnel Email',
+        'General Phone', 'General Email', 'General Website', 'Address', 'Additional Notes', 
         'Confidence Score', 'Found Date'
     ])
     
     # Write data
     for result in results:
+        # Parse general contact info
+        general_contact = {}
+        if result.contact_info:
+            try:
+                general_contact = json.loads(result.contact_info)
+            except:
+                general_contact = {}
+        
         writer.writerow([
             result.county.name,
             result.county.state.name,
             result.organization_name or '',
             result.description or '',
+            result.key_personnel_name or '',
+            result.key_personnel_title or '',
+            result.key_personnel_phone or '',
+            result.key_personnel_email or '',
+            general_contact.get('phone', ''),
+            general_contact.get('email', ''),
+            general_contact.get('website', ''),
             result.address or '',
-            result.contact_info or '',
             result.additional_notes or '',
             result.confidence_score,
             result.created_at.strftime('%Y-%m-%d %H:%M:%S')

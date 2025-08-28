@@ -135,13 +135,26 @@ class ProspectorService:
         else:
             # Save each organization found
             for org in organizations:
-                contact_info = json.dumps(org.get('contact', {}))
+                # Handle key personnel information
+                key_personnel = org.get('key_personnel', {})
+                general_contact = org.get('general_contact', {})
+                
+                # Convert general contact to JSON string for backward compatibility
+                contact_info = json.dumps(general_contact)
                 
                 result = SearchResult(
                     job_id=job_id,
                     county_id=county_id,
                     organization_name=org.get('name', 'Unknown'),
                     description=org.get('description', ''),
+                    
+                    # Key personnel information
+                    key_personnel_name=key_personnel.get('name', ''),
+                    key_personnel_title=key_personnel.get('title', ''),
+                    key_personnel_phone=key_personnel.get('phone', ''),
+                    key_personnel_email=key_personnel.get('email', ''),
+                    
+                    # General contact information
                     contact_info=contact_info,
                     address=org.get('address', ''),
                     additional_notes=org.get('notes', ''),
