@@ -53,16 +53,23 @@ class AIService:
         
         try:
             if self.client:
-                # GPT-5 with new Responses API for better reasoning
-                response = self.client.responses.create(
+                # GPT-5 with Chat Completions API and reasoning parameters
+                response = self.client.chat.completions.create(
                     model=self.model,
-                    input=f"""You are a thorough researcher specializing in finding public health and social service organizations. Provide accurate, factual information based on real organizations. If you cannot find specific information, clearly state that rather than making assumptions.
-
-{prompt}""",
-                    reasoning={"effort": "medium"},  # Medium reasoning for balanced accuracy and speed
-                    text={"verbosity": "medium"}  # Medium verbosity for detailed but concise responses
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are a thorough researcher specializing in finding public health and social service organizations. Provide accurate, factual information based on real organizations. If you cannot find specific information, clearly state that rather than making assumptions."
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    reasoning_effort="medium",  # GPT-5 reasoning effort for balanced accuracy and speed
+                    verbosity="medium"  # GPT-5 verbosity for detailed but concise responses
                 )
-                raw_response = response.output_text
+                raw_response = response.choices[0].message.content
             else:
                 # Legacy OpenAI API fallback with GPT-5 Chat Completions
                 response = openai.ChatCompletion.create(
