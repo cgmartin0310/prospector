@@ -54,7 +54,8 @@ class ProspectingJob(db.Model):
             return 0
         
         total_counties = County.query.filter_by(state_id=self.state_id).count()
-        processed_counties = SearchResult.query.filter_by(job_id=self.id).count()
+        # Count unique counties that have been processed (not total results)
+        processed_counties = db.session.query(SearchResult.county_id).filter_by(job_id=self.id).distinct().count()
         
         if total_counties == 0:
             return 0

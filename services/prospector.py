@@ -170,7 +170,8 @@ class ProspectorService:
             return None
         
         total_counties = County.query.filter_by(state_id=job.state_id).count()
-        processed_counties = SearchResult.query.filter_by(job_id=job_id).count()
+        # Count unique counties processed, not total results
+        processed_counties = db.session.query(SearchResult.county_id).filter_by(job_id=job_id).distinct().count()
         
         # Count organizations found
         organizations_found = SearchResult.query.filter_by(job_id=job_id).filter(

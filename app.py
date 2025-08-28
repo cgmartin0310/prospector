@@ -107,7 +107,8 @@ def api_job_status(job_id):
     """API endpoint for job status updates"""
     job = ProspectingJob.query.get_or_404(job_id)
     counties_total = County.query.filter_by(state_id=job.state_id).count()
-    counties_processed = SearchResult.query.filter_by(job_id=job_id).count()
+    # Count unique counties processed, not total results
+    counties_processed = db.session.query(SearchResult.county_id).filter_by(job_id=job_id).distinct().count()
     
     return jsonify({
         'status': job.status,
