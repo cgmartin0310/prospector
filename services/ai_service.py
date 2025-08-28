@@ -66,10 +66,17 @@ class AIService:
                 temperature = float(custom_temperature) if custom_temperature else 0.2  # Slightly increased for better results
                 max_tokens = 4000
                 use_responses_api = False
+                supports_json_format = True
+            elif 'gpt-4' in self.model:
+                temperature = float(custom_temperature) if custom_temperature else 0.3
+                max_tokens = 2000
+                use_responses_api = False
+                supports_json_format = False  # GPT-4 doesn't support response_format
             else:
                 temperature = float(custom_temperature) if custom_temperature else 0.3
                 max_tokens = 2000
                 use_responses_api = False
+                supports_json_format = False
             
             if self.client:
                 if use_responses_api and 'gpt-5' in self.model:
@@ -82,9 +89,9 @@ class AIService:
                     raw_response = response.output_text
                 else:
                     # Use chat completions API for other models
-                    response = self.client.chat.completions.create(
-                        model=self.model,
-                        messages=[
+                    response_params = {
+                        "model": self.model,
+                        "messages": [
                             {
                                 "role": "system",
                                 "content": "You are a thorough researcher specializing in finding public health and social service organizations. You must respond with valid JSON format as specified in the user's request. Be factual and accurate - if you cannot find specific information, clearly state that rather than making assumptions."
@@ -94,10 +101,15 @@ class AIService:
                                 "content": prompt
                             }
                         ],
-                        temperature=temperature,
-                        max_tokens=max_tokens,
-                        response_format={"type": "json_object"} if not use_responses_api else None
-                    )
+                        "temperature": temperature,
+                        "max_tokens": max_tokens
+                    }
+                    
+                    # Only add response_format for models that support it
+                    if supports_json_format:
+                        response_params["response_format"] = {"type": "json_object"}
+                    
+                    response = self.client.chat.completions.create(**response_params)
                     raw_response = response.choices[0].message.content
             else:
                 # Legacy OpenAI API
