@@ -85,10 +85,16 @@ class ProspectorService:
             
         except Exception as e:
             # Mark job as failed
-            job.status = 'failed'
-            job.error_message = str(e)
-            job.completed_at = datetime.utcnow()
-            db.session.commit()
+            try:
+                db.session.rollback()  # Roll back any pending transactions
+                job = ProspectingJob.query.get(job_id)  # Refresh the job object
+                job.status = 'failed'
+                job.error_message = str(e)
+                job.completed_at = datetime.utcnow()
+                db.session.commit()
+            except Exception as commit_error:
+                print(f"Error updating job status: {str(commit_error)}")
+                db.session.rollback()
             print(f"Job {job_id} failed: {str(e)}")
     
     def _save_research_results(self, job_id: int, county_id: int, research_result: dict):
@@ -105,7 +111,11 @@ class ProspectorService:
                 confidence_score=0.0
             )
             db.session.add(result)
-            db.session.commit()
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                raise e
             return
         
         organizations = research_result.get('organizations', [])
@@ -140,7 +150,11 @@ class ProspectorService:
                 )
                 db.session.add(result)
         
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise e
     
     def pause_job(self, job_id: int):
         """Pause a running job"""
