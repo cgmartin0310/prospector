@@ -45,12 +45,6 @@ class ProspectorService:
                     
                     print(f"Processing {county.name} County ({i+1}/{len(counties)})...")
                     
-                    # Check if we already have a result for this county in this job
-                    existing_result = SearchResult.query.filter_by(
-                        job_id=job_id, 
-                        county_id=county.id
-                    ).first()
-                    
                     # Conduct AI research for this county
                     research_result = self.ai_service.research_county(
                         county.name, 
@@ -59,7 +53,7 @@ class ProspectorService:
                     )
                     
                     # Save or update the result for this county
-                    self._save_or_update_county_result(job_id, county.id, research_result, existing_result)
+                    self._save_or_update_county_result(job_id, county.id, research_result)
                     
                     # Delay between searches to be respectful to AI API
                     if i < len(counties) - 1:  # Don't delay after the last county
@@ -95,13 +89,17 @@ class ProspectorService:
     
 
     
-    def _save_or_update_county_result(self, job_id: int, county_id: int, research_result: dict, existing_result: SearchResult):
+    def _save_or_update_county_result(self, job_id: int, county_id: int, research_result: dict):
         """
         Saves or updates a SearchResult for a given county.
         If an existing result exists, it will be replaced if the new result has a higher confidence score.
         """
         if not research_result.get('success', False):
             # If AI research failed, save a record indicating no results found
+            existing_result = SearchResult.query.filter_by(
+                job_id=job_id, 
+                county_id=county_id
+            ).first()
             if existing_result:
                 # If an existing result exists, delete it
                 db.session.delete(existing_result)
@@ -113,6 +111,10 @@ class ProspectorService:
 
         if not organizations:
             # If AI research found no organizations, save a record indicating no results found
+            existing_result = SearchResult.query.filter_by(
+                job_id=job_id, 
+                county_id=county_id
+            ).first()
             if existing_result:
                 # If an existing result exists, delete it
                 db.session.delete(existing_result)
@@ -145,6 +147,11 @@ class ProspectorService:
         new_result_data['key_personnel_title'] = key_personnel.get('title', '')
         new_result_data['key_personnel_phone'] = key_personnel.get('phone', '')
         new_result_data['key_personnel_email'] = key_personnel.get('email', '')
+
+        existing_result = SearchResult.query.filter_by(
+            job_id=job_id, 
+            county_id=county_id
+        ).first()
 
         if existing_result:
             # If an existing result exists, update it if the new one has a higher confidence score
