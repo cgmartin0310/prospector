@@ -55,7 +55,7 @@ class AIService:
         try:
             # Adjust parameters based on model
             if 'gpt-5' in self.model:
-                temperature = 0.3  # Increased from 0.1 to get more results while maintaining accuracy
+                # GPT-5 uses responses API - no temperature parameter available
                 max_tokens = 6000  # GPT-5 can handle more tokens
                 use_responses_api = True  # Use the new responses API for GPT-5
             elif 'gpt-4o' in self.model:
@@ -69,12 +69,11 @@ class AIService:
             
             if self.client:
                 if use_responses_api and 'gpt-5' in self.model:
-                    # Use the new responses API for GPT-5
+                    # Use the new responses API for GPT-5 (no temperature parameter)
                     response = self.client.responses.create(
                         model=self.model,
                         input=prompt,
-                        max_tokens=max_tokens,
-                        temperature=temperature
+                        max_tokens=max_tokens
                     )
                     raw_response = response.output_text
                 else:
