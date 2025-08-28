@@ -55,11 +55,11 @@ class AIService:
         try:
             # Adjust parameters based on model
             if 'gpt-5' in self.model:
-                temperature = 0.1  # Very precise for GPT-5
+                temperature = 0.3  # Increased from 0.1 to get more results while maintaining accuracy
                 max_tokens = 6000  # GPT-5 can handle more tokens
                 use_responses_api = True  # Use the new responses API for GPT-5
             elif 'gpt-4o' in self.model:
-                temperature = 0.1
+                temperature = 0.2  # Slightly increased for better results
                 max_tokens = 4000
                 use_responses_api = False
             else:
@@ -142,6 +142,15 @@ CRITICAL REQUIREMENTS:
 4. If no organizations are found, clearly state this.
 5. PRIORITY: Find the key personnel (director, manager, coordinator, head) of each organization and their direct contact information.
 
+CRITICAL - NO MADE UP INFORMATION:
+- NEVER make up names, phone numbers, or email addresses
+- If you cannot find a specific person's name, use null
+- If you cannot find a specific phone number, use null  
+- If you cannot find a specific email address, use null
+- Only use information you can verify from official sources
+- Generic contact info (like general@organization.org) is acceptable if verified
+- When in doubt, use null rather than guessing
+
 For each organization you find, provide complete information in this exact JSON format:
 
 {{
@@ -150,25 +159,25 @@ For each organization you find, provide complete information in this exact JSON 
       "name": "Full organization name",
       "description": "Detailed description of services and mission",
       "key_personnel": {{
-        "name": "Name of director/manager/coordinator",
-        "title": "Their specific title (e.g., Director, Manager, Coordinator)",
-        "phone": "Direct phone number or null",
-        "email": "Direct email address or null"
+        "name": "Real name of director/manager/coordinator (or null if not found)",
+        "title": "Their specific title (or null if not found)",
+        "phone": "Real direct phone number (or null if not found)",
+        "email": "Real direct email address (or null if not found)"
       }},
       "general_contact": {{
-        "phone": "General organization phone or null",
-        "email": "General organization email or null", 
-        "website": "Organization website URL or null"
+        "phone": "Real general organization phone (or null if not found)",
+        "email": "Real general organization email (or null if not found)", 
+        "website": "Real organization website URL (or null if not found)"
       }},
-      "address": "full physical address or null",
-      "notes": "any additional relevant information about the organization or key personnel or null",
+      "address": "Real full physical address (or null if not found)",
+      "notes": "Any additional relevant information about the organization or key personnel (or null)",
       "confidence": 0.95
     }}
   ],
   "search_summary": "Comprehensive summary of your research process, sources consulted, and findings"
 }}
 
-IMPORTANT: Focus on finding the specific person in charge (director, manager, coordinator, head) of each organization and their direct contact information. This is more valuable than general organization contact info.
+IMPORTANT: Focus on finding the specific person in charge (director, manager, coordinator, head) of each organization and their real, verified contact information. If you cannot find specific contact information, use null rather than making up fake information.
 
 If no organizations are found, return:
 {{
@@ -187,11 +196,20 @@ IMPORTANT: Focus ONLY on {county_name} County. Do not include organizations from
 
 PRIORITY: Find the key personnel (director, manager, coordinator, head) of each organization and their direct contact information.
 
+CRITICAL - NO MADE UP INFORMATION:
+- NEVER make up names, phone numbers, or email addresses
+- If you cannot find a specific person's name, use null
+- If you cannot find a specific phone number, use null  
+- If you cannot find a specific email address, use null
+- Only use information you can verify from official sources
+- Generic contact info (like general@organization.org) is acceptable if verified
+- When in doubt, use null rather than guessing
+
 For each organization found, provide:
 - name: Organization name
 - description: Brief description of services
-- key_personnel: Object with name, title, phone, email of the person in charge
-- general_contact: Object with general organization phone, email, website
+- key_personnel: Object with name, title, phone, email of the person in charge (use null if not found)
+- general_contact: Object with general organization phone, email, website (use null if not found)
 - address: Physical address (use null if not available)
 - notes: Additional relevant information
 - confidence: Number between 0.0 and 1.0 indicating your confidence
@@ -205,18 +223,18 @@ Respond with ONLY valid JSON in this exact format:
       "name": "Organization Name",
       "description": "What they do",
       "key_personnel": {{
-        "name": "Name of director/manager/coordinator",
-        "title": "Their title (e.g., Director, Manager, Coordinator)",
-        "phone": "Direct phone number or null",
-        "email": "Direct email address or null"
+        "name": "Real name of director/manager/coordinator (or null if not found)",
+        "title": "Their title (or null if not found)",
+        "phone": "Real direct phone number (or null if not found)",
+        "email": "Real direct email address (or null if not found)"
       }},
       "general_contact": {{
-        "phone": "General organization phone or null",
-        "email": "General organization email or null",
-        "website": "website or null"
+        "phone": "Real general organization phone (or null if not found)",
+        "email": "Real general organization email (or null if not found)",
+        "website": "Real organization website (or null if not found)"
       }},
-      "address": "address or null",
-      "notes": "additional info or null",
+      "address": "Real address (or null if not found)",
+      "notes": "Additional info (or null if not found)",
       "confidence": 0.9
     }}
   ],
