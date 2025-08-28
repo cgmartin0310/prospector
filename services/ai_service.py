@@ -66,7 +66,8 @@ class AIService:
                             "content": prompt
                         }
                     ],
-                    temperature=0.3  # Lower temperature for more factual responses
+                    temperature=0.3,  # Lower temperature for more factual responses
+                    max_tokens=2000
                 )
                 raw_response = response.choices[0].message.content
             else:
@@ -83,7 +84,8 @@ class AIService:
                             "content": prompt
                         }
                     ],
-                    temperature=0.3
+                    temperature=0.3,  # Lower temperature for more factual responses
+                    max_tokens=2000
                 )
                 raw_response = response.choices[0].message.content
             
