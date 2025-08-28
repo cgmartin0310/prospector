@@ -174,10 +174,18 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary" 
-                                                onclick="viewDetails({{ result.id }})">
+                                        <button class="btn btn-sm btn-outline-primary me-1" 
+                                                onclick="viewDetails({{ result.id }})"
+                                                title="View Details">
                                             <i class="fas fa-eye"></i>
                                         </button>
+                                        {% if job.status != 'running' %}
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                onclick="deleteResult({{ result.id }}, '{{ result.organization_name or 'Unknown Organization' }}', '{{ result.county.name }}')"
+                                                title="Delete Result">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -293,6 +301,32 @@ function viewDetails(resultId) {
             new bootstrap.Modal(document.getElementById('resultModal')).show();
         })
         .catch(console.error);
+}
+
+function deleteResult(resultId, organizationName, countyName) {
+    if (confirm(`Are you sure you want to delete this result?\n\n"${organizationName}" from ${countyName}\n\nThis action cannot be undone.`)) {
+        fetch(`/api/result/${resultId}/delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                alert(data.message);
+                // Reload the page to update the results list
+                window.location.reload();
+            } else {
+                // Show error message
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting result: ' + error.message);
+        });
+    }
 }
 
 function deleteJobFromStatus(jobId, jobQuery) {

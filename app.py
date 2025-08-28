@@ -195,6 +195,43 @@ def api_export_job_results(job_id):
         }
     )
 
+@app.route('/api/result/<int:result_id>/delete', methods=['DELETE', 'POST'])
+def api_delete_result(result_id):
+    """Delete an individual search result"""
+    try:
+        result = SearchResult.query.get_or_404(result_id)
+        
+        # Store information for the response
+        organization_name = result.organization_name or "Unknown Organization"
+        county_name = result.county.name
+        state_name = result.county.state.name
+        job_id = result.job_id
+        
+        # Check if the associated job is currently running
+        job = ProspectingJob.query.get(job_id)
+        if job and job.status == 'running':
+            return jsonify({
+                'success': False,
+                'error': 'Cannot delete results from a job that is currently running. Please wait for it to complete.'
+            }), 400
+        
+        # Delete the result
+        db.session.delete(result)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully deleted result "{organization_name}" from {county_name}, {state_name}.',
+            'job_id': job_id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'Failed to delete result: {str(e)}'
+        }), 500
+
 @app.route('/api/job/<int:job_id>/delete', methods=['DELETE', 'POST'])
 def api_delete_job(job_id):
     """Delete a job and all its associated results"""
