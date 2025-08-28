@@ -55,7 +55,7 @@ def index():
         'active_jobs': ProspectingJob.query.filter_by(status='running').count(),
         'total_results': SearchResult.query.filter(SearchResult.organization_name.isnot(None)).count(),
         'states_available': states_with_counties,
-        'golden_results': GoldenResult.query.count()
+        'golden_results': GoldenResult.query.count() if GoldenResult else 0
     }
     return render_template('index.html', recent_jobs=recent_jobs, stats=stats)
 

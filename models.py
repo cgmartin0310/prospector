@@ -96,7 +96,7 @@ class SearchResult(db.Model):
     duplicate_of = db.Column(db.Integer, db.ForeignKey('search_result.id'))
     
     # Golden dataset flag
-    is_golden = db.Column(db.Boolean, default=False)  # Marked as verified perfect match
+    # is_golden = db.Column(db.Boolean, default=False)  # Marked as verified perfect match - temporarily disabled
     
     def __repr__(self):
         return f'<SearchResult {self.organization_name} in {self.county.name}>'

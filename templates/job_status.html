@@ -201,9 +201,9 @@
                                             <i class="fas fa-search"></i>
                                         </button>
                                         {% if result.organization_name and job.status != 'running' %}
-                                        <button class="btn btn-sm {% if result.is_golden %}btn-warning{% else %}btn-outline-warning{% endif %} me-1" 
-                                                onclick="toggleGolden({{ result.id }}, '{{ result.organization_name }}', '{{ result.county.name }}', {{ result.is_golden|lower }})"
-                                                title="{% if result.is_golden %}Remove from Golden Dataset{% else %}Mark as Golden (Verified Perfect Match){% endif %}">
+                                        <button class="btn btn-sm btn-outline-warning me-1" 
+                                                onclick="alert('Golden Dataset feature temporarily disabled while fixing database issues')"
+                                                title="Golden Dataset feature temporarily disabled">
                                             <i class="fas fa-star"></i>
                                         </button>
                                         {% endif %}
