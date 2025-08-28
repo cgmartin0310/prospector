@@ -27,14 +27,14 @@ class AIService:
                     api_key=Config.OPENAI_API_KEY,
                     http_client=http_client
                 )
-                self.model = "gpt-4"
+                self.model = "gpt-4o"  # Latest GPT-4 model (faster, cheaper, better)
             except Exception as e:
                 print(f"OpenAI client initialization error: {e}")
                 # Fallback to legacy API if available
                 if 'openai' in globals():
                     openai.api_key = Config.OPENAI_API_KEY
                     self.client = None
-                    self.model = "gpt-4"
+                    self.model = "gpt-4o"  # Latest GPT-4 model (faster, cheaper, better)
                 else:
                     raise e
         else:
