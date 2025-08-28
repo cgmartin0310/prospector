@@ -43,18 +43,23 @@ def health_check():
 def index():
     """Main dashboard showing recent jobs and stats"""
     recent_jobs = ProspectingJob.query.order_by(ProspectingJob.created_at.desc()).limit(10).all()
+    
+    # Count only states that have counties available for searching
+    states_with_counties = db.session.query(State.id).join(County).group_by(State.id).count()
+    
     stats = {
         'total_jobs': ProspectingJob.query.count(),
         'active_jobs': ProspectingJob.query.filter_by(status='running').count(),
         'total_results': SearchResult.query.count(),
-        'states_available': State.query.count()
+        'states_available': states_with_counties
     }
     return render_template('index.html', recent_jobs=recent_jobs, stats=stats)
 
 @app.route('/start-search')
 def start_search_form():
     """Form to start a new prospecting search"""
-    states = State.query.order_by(State.name).all()
+    # Only show states that have counties available for searching
+    states = State.query.join(County).group_by(State.id).order_by(State.name).all()
     return render_template('start_search.html', states=states)
 
 @app.route('/start-search', methods=['POST'])
