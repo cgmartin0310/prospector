@@ -59,14 +59,14 @@ class AIService:
                     messages=[
                         {
                             "role": "system",
-                            "content": "You are a thorough researcher specializing in finding public health and social service organizations. Provide accurate, factual information based on real organizations. If you cannot find specific information, clearly state that rather than making assumptions."
+                            "content": "You are a precise researcher specializing in finding specific public health and social service organizations. ONLY include organizations that directly match the exact search criteria. Do NOT include organizations that provide tangentially related services. If you cannot find organizations that specifically match the criteria, return an empty list rather than including loosely related organizations. Be extremely selective and accurate."
                         },
                         {
                             "role": "user",
                             "content": prompt
                         }
                     ],
-                    temperature=0.3,  # Lower temperature for more factual responses
+                    temperature=0.1,  # Very low temperature for maximum precision and specificity
                     max_tokens=2000
                 )
                 raw_response = response.choices[0].message.content
@@ -77,14 +77,14 @@ class AIService:
                     messages=[
                         {
                             "role": "system",
-                            "content": "You are a thorough researcher specializing in finding public health and social service organizations. Provide accurate, factual information based on real organizations. If you cannot find specific information, clearly state that rather than making assumptions."
+                            "content": "You are a precise researcher specializing in finding specific public health and social service organizations. ONLY include organizations that directly match the exact search criteria. Do NOT include organizations that provide tangentially related services. If you cannot find organizations that specifically match the criteria, return an empty list rather than including loosely related organizations. Be extremely selective and accurate."
                         },
                         {
                             "role": "user",
                             "content": prompt
                         }
                     ],
-                    temperature=0.3,  # Lower temperature for more factual responses
+                    temperature=0.1,  # Very low temperature for maximum precision and specificity
                     max_tokens=2000
                 )
                 raw_response = response.choices[0].message.content
@@ -104,41 +104,46 @@ class AIService:
         """Build a detailed research prompt for the AI"""
         
         prompt = f"""
-Please research and find information about organizations in {county_name} County, {state_name} that match this description: "{search_query}"
+SEARCH CRITERIA: Find organizations in {county_name} County, {state_name} that SPECIFICALLY match: "{search_query}"
 
-Focus specifically on {county_name} County. Do not include organizations from other counties unless they explicitly serve {county_name} County.
+STRICT REQUIREMENTS:
+- ONLY include organizations that directly provide the exact services mentioned in the search query
+- Do NOT include general health organizations, hospitals, or clinics unless they have dedicated programs matching the search
+- Do NOT include organizations that "might" or "could" provide related services
+- Do NOT include broad social services organizations unless they have specific programs matching the criteria
+- If an organization provides the service as just one small part of many services, exclude it unless it's a major focus
 
-For each organization you find, please provide:
-1. Organization name
-2. Brief description of services
-3. Contact information (phone, email, website if available)
-4. Physical address if available
-5. Any additional relevant notes
+GEOGRAPHIC FOCUS:
+- Focus specifically on {county_name} County, {state_name}
+- Only include organizations based in this county or explicitly serving this county
 
-Please format your response as a JSON array of organizations, like this:
+CONFIDENCE SCORING:
+- Set confidence to 0.9-1.0 for organizations that are an exact match
+- Set confidence to 0.7-0.8 for organizations that closely match but aren't perfect
+- Do NOT include anything with confidence below 0.7
+
+Please format your response as JSON:
 ```json
 {{
   "organizations": [
     {{
       "name": "Organization Name",
-      "description": "Brief description of what they do",
+      "description": "Brief description focusing on how they match the search criteria",
       "contact": {{
         "phone": "phone number if available",
         "email": "email if available", 
         "website": "website if available"
       }},
       "address": "physical address if available",
-      "notes": "any additional relevant information",
+      "notes": "explain specifically why this organization matches the search criteria",
       "confidence": 0.9
     }}
   ],
-  "search_summary": "Brief summary of your search process and findings"
+  "search_summary": "Brief summary explaining your search process and why you included or excluded organizations"
 }}
 ```
 
-If you cannot find any organizations matching the criteria in {county_name} County, please return an empty organizations array and explain in the search_summary.
-
-Be thorough but factual. Only include organizations you can verify exist.
+IMPORTANT: If you cannot find organizations that SPECIFICALLY match the criteria, return an empty organizations array. It is better to find nothing than to include loosely related organizations.
 """
         return prompt
     
