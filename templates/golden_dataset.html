@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Golden Dataset - Prospector{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-star text-warning"></i> Golden Dataset</h1>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-star fa-2x text-warning mb-2"></i>
+                            <h3>{{ stats.total_golden }}</h3>
+                            <p class="text-muted mb-0">Total Golden Results</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-map fa-2x text-info mb-2"></i>
+                            <h3>{{ stats.states_covered }}</h3>
+                            <p class="text-muted mb-0">States Covered</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-bullseye fa-2x text-success mb-2"></i>
+                            <h3>{{ "%.1f"|format(stats.avg_relevance * 100) }}%</h3>
+                            <p class="text-muted mb-0">Avg Relevance</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-check-circle fa-2x text-primary mb-2"></i>
+                            <h3>{{ "%.1f"|format(stats.avg_completeness * 100) }}%</h3>
+                            <p class="text-muted mb-0">Avg Completeness</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Card -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-info-circle"></i> About Golden Dataset</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>The Golden Dataset contains verified, high-quality matches that are used to improve future AI searches. These examples help the AI:</p>
+                            <ul>
+                                <li><strong>Reduce hallucinations</strong> - AI learns from verified examples</li>
+                                <li><strong>Improve accuracy</strong> - Better pattern recognition for similar organizations</li>
+                                <li><strong>Fill gaps</strong> - Suggest similar organizations when primary sources miss them</li>
+                                <li><strong>Maintain consistency</strong> - Standardized format and quality across searches</li>
+                            </ul>
+                            <p class="mb-0"><strong>How to use:</strong> Mark excellent results as "Golden" using the ⭐ button in search results. These will automatically be used to improve future searches.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Golden Results Table -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-list"></i> Golden Results</h5>
+                            <div>
+                                <button class="btn btn-sm btn-outline-success" onclick="exportGoldenDataset()">
+                                    <i class="fas fa-download"></i> Export CSV
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {% if golden_results %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Organization</th>
+                                                <th>Location</th>
+                                                <th>Key Personnel</th>
+                                                <th>Services</th>
+                                                <th>Quality Scores</th>
+                                                <th>Verification</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for result in golden_results %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ result.organization_name }}</strong>
+                                                    {% if result.description %}
+                                                        <br><small class="text-muted">{{ result.description[:100] }}{% if result.description|length > 100 %}...{% endif %}</small>
+                                                    {% endif %}
+                                                    {% if result.website %}
+                                                        <br><a href="{{ result.website }}" target="_blank" class="text-primary"><i class="fas fa-external-link-alt"></i> Website</a>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <strong>{{ result.county.name }} County</strong><br>
+                                                    <small class="text-muted">{{ result.state.name }}</small>
+                                                    {% if result.address %}
+                                                        <br><small class="text-muted">{{ result.address }}</small>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if result.key_personnel_name %}
+                                                        <strong>{{ result.key_personnel_name }}</strong><br>
+                                                        <small class="text-muted">{{ result.key_personnel_title }}</small>
+                                                        {% if result.key_personnel_phone %}
+                                                            <br><i class="fas fa-phone text-success"></i> {{ result.key_personnel_phone }}
+                                                        {% endif %}
+                                                        {% if result.key_personnel_email %}
+                                                            <br><i class="fas fa-envelope text-primary"></i> {{ result.key_personnel_email }}
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <em class="text-muted">No key personnel listed</em>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if result.services %}
+                                                        {% set services = result.services|from_json %}
+                                                        {% for service, enabled in services.items() %}
+                                                            {% if enabled %}
+                                                                <span class="badge bg-success me-1">{{ service.replace('_', ' ').title() }}</span>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                    {% if result.search_category %}
+                                                        <br><small class="text-muted">Category: {{ result.search_category.replace('_', ' ').title() }}</small>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <div class="mb-1">
+                                                        <small>Relevance:</small>
+                                                        <div class="progress" style="width: 60px; height: 8px;">
+                                                            <div class="progress-bar bg-success" style="width: {{ (result.relevance_score * 100)|round }}%"></div>
+                                                        </div>
+                                                        <small>{{ (result.relevance_score * 100)|round }}%</small>
+                                                    </div>
+                                                    <div>
+                                                        <small>Completeness:</small>
+                                                        <div class="progress" style="width: 60px; height: 8px;">
+                                                            <div class="progress-bar bg-info" style="width: {{ (result.completeness_score * 100)|round }}%"></div>
+                                                        </div>
+                                                        <small>{{ (result.completeness_score * 100)|round }}%</small>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">
+                                                        <strong>Source:</strong> {{ result.verification_source }}<br>
+                                                        <strong>By:</strong> {{ result.verified_by }}<br>
+                                                        <strong>Date:</strong> {{ result.verification_date.strftime('%m/%d/%Y') }}
+                                                    </small>
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary me-1" 
+                                                            onclick="viewGoldenDetails({{ result.id }})"
+                                                            title="View Details">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" 
+                                                            onclick="deleteGoldenResult({{ result.id }}, '{{ result.organization_name }}')"
+                                                            title="Delete Golden Result">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No Golden Results Yet</h5>
+                                    <p class="text-muted">Start marking excellent search results as "Golden" to build your dataset.</p>
+                                    <a href="{{ url_for('view_results') }}" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> View Search Results
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Golden Result Details Modal -->
+<div class="modal fade" id="goldenModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Golden Result Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="goldenModalBody">
+                <!-- Content loaded via JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewGoldenDetails(resultId) {
+    fetch(`/api/golden-result/${resultId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const result = data.data;
+                document.getElementById('goldenModalBody').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Organization</h6>
+                            <p><strong>${result.organization_name}</strong></p>
+                            
+                            <h6>Description</h6>
+                            <p>${result.description || 'No description available'}</p>
+                            
+                            <h6>Location</h6>
+                            <p>${result.county}, ${result.state}</p>
+                            ${result.address ? `<p>${result.address}</p>` : ''}
+                            ${result.website ? `<p><a href="${result.website}" target="_blank">${result.website}</a></p>` : ''}
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Key Personnel</h6>
+                            ${result.key_personnel_name ? 
+                                `<p><strong>${result.key_personnel_name}</strong><br>
+                                <small class="text-muted">${result.key_personnel_title || ''}</small><br>
+                                ${result.key_personnel_phone ? `<i class="fas fa-phone"></i> ${result.key_personnel_phone}<br>` : ''}
+                                ${result.key_personnel_email ? `<i class="fas fa-envelope"></i> ${result.key_personnel_email}` : ''}</p>`
+                                : '<p>No key personnel listed</p>'
+                            }
+                            
+                            <h6>Services</h6>
+                            <p>${result.services ? JSON.parse(result.services) : 'No services listed'}</p>
+                            
+                            <h6>Quality Scores</h6>
+                            <p>Relevance: ${Math.round(result.relevance_score * 100)}%<br>
+                            Completeness: ${Math.round(result.completeness_score * 100)}%</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <h6>Verification Details</h6>
+                    <p><strong>Source:</strong> ${result.verification_source}<br>
+                    <strong>Verified by:</strong> ${result.verified_by}<br>
+                    <strong>Category:</strong> ${result.search_category}</p>
+                    
+                    ${result.notes ? `<h6>Notes</h6><p>${result.notes}</p>` : ''}
+                `;
+                
+                new bootstrap.Modal(document.getElementById('goldenModal')).show();
+            } else {
+                alert('Error loading golden result details: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error loading golden result details: ' + error.message);
+        });
+}
+
+function deleteGoldenResult(resultId, organizationName) {
+    if (confirm(`Are you sure you want to delete this golden result?\n\n"${organizationName}"\n\nThis will remove it from the golden dataset and it will no longer be used to improve future searches.`)) {
+        fetch(`/api/golden-result/${resultId}/delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting golden result: ' + error.message);
+        });
+    }
+}
+
+function exportGoldenDataset() {
+    window.location.href = '/api/golden-dataset/export';
+}
+</script>
+{% endblock %}

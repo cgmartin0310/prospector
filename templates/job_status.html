@@ -200,6 +200,13 @@
                                                 title="Search This County Again">
                                             <i class="fas fa-search"></i>
                                         </button>
+                                        {% if result.organization_name and job.status != 'running' %}
+                                        <button class="btn btn-sm {% if result.is_golden %}btn-warning{% else %}btn-outline-warning{% endif %} me-1" 
+                                                onclick="toggleGolden({{ result.id }}, '{{ result.organization_name }}', '{{ result.county.name }}', {{ result.is_golden|lower }})"
+                                                title="{% if result.is_golden %}Remove from Golden Dataset{% else %}Mark as Golden (Verified Perfect Match){% endif %}">
+                                            <i class="fas fa-star"></i>
+                                        </button>
+                                        {% endif %}
                                         {% if job.status != 'running' %}
                                         <button class="btn btn-sm btn-outline-danger" 
                                                 onclick="deleteResult({{ result.id }}, '{{ result.organization_name or 'Unknown Organization' }}', '{{ result.county.name }}')"
@@ -413,6 +420,49 @@ function searchCounty(countyId, countyName, searchQuery) {
         })
         .catch(error => {
             alert('Error searching county: ' + error.message);
+            // Reset button
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        });
+    }
+}
+
+function toggleGolden(resultId, organizationName, countyName, isCurrentlyGolden) {
+    const action = isCurrentlyGolden ? 'remove from' : 'add to';
+    const message = isCurrentlyGolden 
+        ? `Remove "${organizationName}" from the Golden Dataset?\n\nThis will no longer be used to improve future searches.`
+        : `Mark "${organizationName}" as a Golden Result?\n\nThis verified perfect match will be used to improve future AI searches for similar organizations.`;
+    
+    if (confirm(message)) {
+        // Show loading state
+        const button = event.target.closest('button');
+        const originalContent = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.disabled = true;
+        
+        fetch(`/api/result/${resultId}/toggle-golden`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                alert(data.message);
+                // Reload the page to show updated button state
+                window.location.reload();
+            } else {
+                // Show error message
+                alert('Error: ' + data.error);
+                // Reset button
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            alert('Error updating golden status: ' + error.message);
             // Reset button
             button.innerHTML = originalContent;
             button.disabled = false;

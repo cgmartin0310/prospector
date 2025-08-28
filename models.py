@@ -95,5 +95,78 @@ class SearchResult(db.Model):
     verified = db.Column(db.Boolean, default=False)
     duplicate_of = db.Column(db.Integer, db.ForeignKey('search_result.id'))
     
+    # Golden dataset flag
+    is_golden = db.Column(db.Boolean, default=False)  # Marked as verified perfect match
+    
     def __repr__(self):
         return f'<SearchResult {self.organization_name} in {self.county.name}>'
+
+class GoldenResult(db.Model):
+    """Golden dataset of verified, high-quality matches for improving AI searches"""
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Organization details
+    organization_name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    services = db.Column(db.Text)  # JSON string of specific services offered
+    
+    # Location
+    county_id = db.Column(db.Integer, db.ForeignKey('county.id'), nullable=False)
+    state_id = db.Column(db.Integer, db.ForeignKey('state.id'), nullable=False)
+    
+    # Contact information
+    key_personnel_name = db.Column(db.String(200))
+    key_personnel_title = db.Column(db.String(100))
+    key_personnel_phone = db.Column(db.String(50))
+    key_personnel_email = db.Column(db.String(200))
+    contact_info = db.Column(db.Text)  # JSON string
+    address = db.Column(db.Text)
+    website = db.Column(db.String(500))
+    
+    # Verification details
+    verification_source = db.Column(db.String(200))  # e.g., "SAMHSA", "County Health Dept", "Manual Verification"
+    verification_date = db.Column(db.DateTime, default=datetime.utcnow)
+    verified_by = db.Column(db.String(100))  # Who verified this result
+    
+    # Search context
+    search_query = db.Column(db.Text)  # Original search query that found this
+    search_category = db.Column(db.String(100))  # e.g., "overdose response", "harm reduction", "naloxone distribution"
+    
+    # Quality metrics
+    relevance_score = db.Column(db.Float, default=1.0)  # How relevant this is (1.0 = perfect)
+    completeness_score = db.Column(db.Float, default=1.0)  # How complete the information is
+    
+    # Metadata
+    notes = db.Column(db.Text)  # Additional notes about why this is a good example
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    county = db.relationship('County', backref='golden_results')
+    state = db.relationship('State', backref='golden_results')
+    
+    def __repr__(self):
+        return f'<GoldenResult {self.organization_name} in {self.county.name}>'
+    
+    def to_dict(self):
+        """Convert to dictionary for API responses"""
+        return {
+            'id': self.id,
+            'organization_name': self.organization_name,
+            'description': self.description,
+            'services': self.services,
+            'county': self.county.name,
+            'state': self.state.name,
+            'key_personnel_name': self.key_personnel_name,
+            'key_personnel_title': self.key_personnel_title,
+            'key_personnel_phone': self.key_personnel_phone,
+            'key_personnel_email': self.key_personnel_email,
+            'contact_info': self.contact_info,
+            'address': self.address,
+            'website': self.website,
+            'verification_source': self.verification_source,
+            'search_category': self.search_category,
+            'relevance_score': self.relevance_score,
+            'completeness_score': self.completeness_score,
+            'notes': self.notes
+        }
