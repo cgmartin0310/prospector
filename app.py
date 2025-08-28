@@ -53,7 +53,7 @@ def index():
     stats = {
         'total_jobs': ProspectingJob.query.count(),
         'active_jobs': ProspectingJob.query.filter_by(status='running').count(),
-        'total_results': SearchResult.query.count(),
+        'total_results': SearchResult.query.filter(SearchResult.organization_name.isnot(None)).count(),
         'states_available': states_with_counties
     }
     return render_template('index.html', recent_jobs=recent_jobs, stats=stats)
