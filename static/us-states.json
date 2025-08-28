@@ -1,0 +1,555 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Alabama",
+        "abbreviation": "AL"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-88.473227, 30.223334], [-88.473227, 35.008028], [-84.888246, 35.008028], [-84.888246, 30.223334], [-88.473227, 30.223334]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Alaska",
+        "abbreviation": "AK"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-180, 51.175092], [-180, 71.432777], [-130, 71.432777], [-130, 51.175092], [-180, 51.175092]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Arizona",
+        "abbreviation": "AZ"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-114.816591, 31.332177], [-114.816591, 37.00426], [-109.045223, 37.00426], [-109.045223, 31.332177], [-114.816591, 31.332177]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Arkansas",
+        "abbreviation": "AR"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-94.617919, 33.004106], [-94.617919, 36.4996], [-89.644395, 36.4996], [-89.644395, 33.004106], [-94.617919, 33.004106]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "California",
+        "abbreviation": "CA"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-124.482003, 32.512317], [-124.482003, 42.009518], [-114.131211, 42.009518], [-114.131211, 32.512317], [-124.482003, 32.512317]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Colorado",
+        "abbreviation": "CO"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-109.060253, 36.992426], [-109.060253, 41.003444], [-102.041524, 41.003444], [-102.041524, 36.992426], [-109.060253, 36.992426]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Connecticut",
+        "abbreviation": "CT"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-73.727775, 40.980144], [-73.727775, 42.050587], [-71.787239, 42.050587], [-71.787239, 40.980144], [-73.727775, 40.980144]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Delaware",
+        "abbreviation": "DE"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-75.788658, 38.451013], [-75.788658, 39.839007], [-75.048683, 39.839007], [-75.048683, 38.451013], [-75.788658, 38.451013]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Florida",
+        "abbreviation": "FL"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-87.634938, 24.396308], [-87.634938, 31.000968], [-80.031362, 31.000968], [-80.031362, 24.396308], [-87.634938, 24.396308]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Georgia",
+        "abbreviation": "GA"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-85.605165, 30.355756], [-85.605165, 35.000659], [-80.840843, 35.000659], [-80.840843, 30.355756], [-85.605165, 30.355756]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Hawaii",
+        "abbreviation": "HI"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-178.334698, 18.910361], [-178.334698, 28.402123], [-154.806773, 28.402123], [-154.806773, 18.910361], [-178.334698, 18.910361]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Idaho",
+        "abbreviation": "ID"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-117.243027, 41.988057], [-117.243027, 49.000239], [-111.043564, 49.000239], [-111.043564, 41.988057], [-117.243027, 41.988057]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Illinois",
+        "abbreviation": "IL"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-91.513079, 36.970298], [-91.513079, 42.508338], [-87.495076, 42.508338], [-87.495076, 36.970298], [-91.513079, 36.970298]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Indiana",
+        "abbreviation": "IN"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-88.09776, 37.771742], [-88.09776, 41.760592], [-84.784579, 41.760592], [-84.784579, 37.771742], [-88.09776, 37.771742]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Iowa",
+        "abbreviation": "IA"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-96.639704, 40.375598], [-96.639704, 43.501196], [-90.140061, 43.501196], [-90.140061, 40.375598], [-96.639704, 40.375598]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kansas",
+        "abbreviation": "KS"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-102.051744, 36.993016], [-102.051744, 40.003162], [-94.588413, 40.003162], [-94.588413, 36.993016], [-102.051744, 36.993016]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kentucky",
+        "abbreviation": "KY"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-89.571509, 36.497129], [-89.571509, 39.147458], [-81.964971, 39.147458], [-81.964971, 36.497129], [-89.571509, 36.497129]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Louisiana",
+        "abbreviation": "LA"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-94.043147, 28.928609], [-94.043147, 33.019457], [-88.817017, 33.019457], [-88.817017, 28.928609], [-94.043147, 28.928609]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Maine",
+        "abbreviation": "ME"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-71.083924, 42.977764], [-71.083924, 47.459686], [-66.949895, 47.459686], [-66.949895, 42.977764], [-71.083924, 42.977764]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Maryland",
+        "abbreviation": "MD"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-79.487651, 37.88654], [-79.487651, 39.723043], [-75.048683, 39.723043], [-75.048683, 37.88654], [-79.487651, 37.88654]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Massachusetts",
+        "abbreviation": "MA"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-73.508142, 41.237964], [-73.508142, 42.886589], [-69.928393, 42.886589], [-69.928393, 41.237964], [-73.508142, 41.237964]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Michigan",
+        "abbreviation": "MI"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-90.418136, 41.696118], [-90.418136, 48.2388], [-82.122986, 48.2388], [-82.122986, 41.696118], [-90.418136, 41.696118]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Minnesota",
+        "abbreviation": "MN"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-97.239209, 43.499356], [-97.239209, 49.384358], [-89.491739, 49.384358], [-89.491739, 43.499356], [-97.239209, 43.499356]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mississippi",
+        "abbreviation": "MS"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-91.655009, 30.173943], [-91.655009, 34.996098], [-88.09776, 34.996098], [-88.09776, 30.173943], [-91.655009, 30.173943]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Missouri",
+        "abbreviation": "MO"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-95.774704, 35.995683], [-95.774704, 40.61364], [-89.098843, 40.61364], [-89.098843, 35.995683], [-95.774704, 35.995683]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Montana",
+        "abbreviation": "MT"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-116.050003, 44.358221], [-116.050003, 49.000239], [-104.039138, 49.000239], [-104.039138, 44.358221], [-116.050003, 44.358221]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Nebraska",
+        "abbreviation": "NE"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-104.053011, 39.999998], [-104.053011, 43.001708], [-95.30829, 43.001708], [-95.30829, 39.999998], [-104.053011, 39.999998]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Nevada",
+        "abbreviation": "NV"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-120.00686, 35.001857], [-120.00686, 42.002207], [-114.039633, 42.002207], [-114.039633, 35.001857], [-120.00686, 35.001857]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "New Hampshire",
+        "abbreviation": "NH"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-72.557247, 42.697042], [-72.557247, 45.305476], [-70.70369, 45.305476], [-70.70369, 42.697042], [-72.557247, 42.697042]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "New Jersey",
+        "abbreviation": "NJ"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-75.559614, 38.928519], [-75.559614, 41.357423], [-73.893979, 41.357423], [-73.893979, 38.928519], [-75.559614, 38.928519]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "New Mexico",
+        "abbreviation": "NM"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-109.050431, 31.332177], [-109.050431, 37.000232], [-103.002564, 37.000232], [-103.002564, 31.332177], [-109.050431, 31.332177]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "New York",
+        "abbreviation": "NY"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-79.762152, 40.496103], [-79.762152, 45.015865], [-71.777491, 45.015865], [-71.777491, 40.496103], [-79.762152, 40.496103]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "North Carolina",
+        "abbreviation": "NC"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-84.321869, 33.842316], [-84.321869, 36.588117], [-75.460621, 36.588117], [-75.460621, 33.842316], [-84.321869, 33.842316]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "North Dakota",
+        "abbreviation": "ND"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-104.047534, 45.935054], [-104.047534, 49.000239], [-96.554507, 49.000239], [-96.554507, 45.935054], [-104.047534, 45.935054]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Ohio",
+        "abbreviation": "OH"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-84.820159, 38.403202], [-84.820159, 41.977523], [-80.518693, 41.977523], [-80.518693, 38.403202], [-84.820159, 38.403202]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Oklahoma",
+        "abbreviation": "OK"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-103.002564, 33.619217], [-103.002564, 37.002206], [-94.430662, 37.002206], [-94.430662, 33.619217], [-103.002564, 33.619217]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Oregon",
+        "abbreviation": "OR"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-124.566244, 41.991794], [-124.566244, 46.292035], [-116.463504, 46.292035], [-116.463504, 41.991794], [-124.566244, 41.991794]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Pennsylvania",
+        "abbreviation": "PA"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-80.524269, 39.7198], [-80.524269, 42.269972], [-74.689516, 42.269972], [-74.689516, 39.7198], [-80.524269, 39.7198]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Rhode Island",
+        "abbreviation": "RI"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-71.907263, 41.095244], [-71.907263, 42.018798], [-71.12057, 42.018798], [-71.12057, 41.095244], [-71.907263, 41.095244]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "South Carolina",
+        "abbreviation": "SC"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-83.35391, 32.0346], [-83.35391, 35.215402], [-78.54203, 35.215402], [-78.54203, 32.0346], [-83.35391, 32.0346]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "South Dakota",
+        "abbreviation": "SD"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-104.057698, 42.479635], [-104.057698, 45.945945], [-96.436589, 45.945945], [-96.436589, 42.479635], [-104.057698, 42.479635]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tennessee",
+        "abbreviation": "TN"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-90.310298, 34.982995], [-90.310298, 36.678118], [-81.6469, 36.678118], [-81.6469, 34.982995], [-90.310298, 34.982995]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Texas",
+        "abbreviation": "TX"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-106.645646, 25.837377], [-106.645646, 36.500704], [-93.508292, 36.500704], [-93.508292, 25.837377], [-106.645646, 25.837377]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Utah",
+        "abbreviation": "UT"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-114.052962, 36.997968], [-114.052962, 42.001567], [-109.041058, 42.001567], [-109.041058, 36.997968], [-114.052962, 36.997968]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Vermont",
+        "abbreviation": "VT"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-73.43774, 42.726853], [-73.43774, 45.016659], [-71.465175, 45.016659], [-71.465175, 42.726853], [-73.43774, 42.726853]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Virginia",
+        "abbreviation": "VA"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-83.675395, 36.540738], [-83.675395, 39.466012], [-75.242266, 39.466012], [-75.242266, 36.540738], [-83.675395, 36.540738]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Washington",
+        "abbreviation": "WA"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-124.763068, 45.543541], [-124.763068, 49.002494], [-116.915989, 49.002494], [-116.915989, 45.543541], [-124.763068, 45.543541]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "West Virginia",
+        "abbreviation": "WV"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-82.644739, 37.201483], [-82.644739, 40.638801], [-77.719519, 40.638801], [-77.719519, 37.201483], [-82.644739, 37.201483]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Wisconsin",
+        "abbreviation": "WI"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-92.888114, 42.491983], [-92.888114, 47.080621], [-86.250356, 47.080621], [-86.250356, 42.491983], [-92.888114, 42.491983]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Wyoming",
+        "abbreviation": "WY"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-111.056888, 40.994746], [-111.056888, 45.005904], [-104.05216, 45.005904], [-104.05216, 40.994746], [-111.056888, 40.994746]]]
+      }
+    }
+  ]
+}

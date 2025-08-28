@@ -252,15 +252,15 @@ function initializeMap() {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
     
-    // Load US states GeoJSON
-    fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
+    // Load US states GeoJSON from local file
+    fetch('/static/us-states.json')
         .then(response => response.json())
         .then(data => {
             createStateLayers(data);
         })
         .catch(error => {
             console.error('Error loading map data:', error);
-            // Fallback to a simpler approach if the external data fails
+            // Fallback to a simpler approach if the local data fails
             createSimpleStateLayers();
         });
 }
@@ -268,7 +268,6 @@ function initializeMap() {
 function createStateLayers(geoJsonData) {
     L.geoJSON(geoJsonData, {
         style: function(feature) {
-            const stateCode = feature.properties.name;
             return {
                 fillColor: '#cccccc',
                 weight: 2,
@@ -278,7 +277,7 @@ function createStateLayers(geoJsonData) {
             };
         },
         onEachFeature: function(feature, layer) {
-            const stateCode = feature.properties.name;
+            const stateCode = feature.properties.abbreviation;
             stateLayers[stateCode] = layer;
             
             layer.on('click', function() {

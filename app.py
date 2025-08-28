@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_file
 from config import Config
 import threading
 import time
@@ -8,6 +8,9 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Create static directory if it doesn't exist
+os.makedirs('static', exist_ok=True)
 
 # Initialize database
 from models import db, State, County, ProspectingJob, SearchResult
@@ -590,3 +593,8 @@ def api_map_start_search(state_abbr):
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    """Serve static files including GeoJSON"""
+    return send_file(f'static/{filename}')
