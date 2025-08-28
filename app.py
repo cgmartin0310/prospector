@@ -13,7 +13,7 @@ app.config.from_object(Config)
 os.makedirs('static', exist_ok=True)
 
 # Initialize database
-from models import db, State, County, ProspectingJob, SearchResult
+from models import db, State, County, ProspectingJob, SearchResult, GoldenResult
 db.init_app(app)
 
 # Custom template filters
