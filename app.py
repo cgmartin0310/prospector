@@ -238,6 +238,111 @@ def api_delete_result(result_id):
             'error': f'Failed to delete result: {str(e)}'
         }), 500
 
+@app.route('/api/job/<int:job_id>/pause', methods=['POST'])
+def api_pause_job(job_id):
+    """Pause a running job"""
+    try:
+        job = ProspectingJob.query.get_or_404(job_id)
+        
+        if job.status != 'running':
+            return jsonify({
+                'success': False,
+                'error': f'Cannot pause job with status: {job.status}. Only running jobs can be paused.'
+            }), 400
+        
+        # Update job status to paused
+        job.status = 'paused'
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Job #{job_id} has been paused. You can resume it later or delete it.',
+            'new_status': 'paused'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'Failed to pause job: {str(e)}'
+        }), 500
+
+@app.route('/api/job/<int:job_id>/resume', methods=['POST'])
+def api_resume_job(job_id):
+    """Resume a paused job"""
+    try:
+        job = ProspectingJob.query.get_or_404(job_id)
+        
+        if job.status != 'paused':
+            return jsonify({
+                'success': False,
+                'error': f'Cannot resume job with status: {job.status}. Only paused jobs can be resumed.'
+            }), 400
+        
+        # Update job status and restart
+        job.status = 'running'
+        job.current_county = None  # Will be set when processing resumes
+        db.session.commit()
+        
+        # Start the prospecting process in background
+        from services.prospector import ProspectorService
+        
+        def run_job_with_context(job_id):
+            """Run job with Flask app context"""
+            with app.app_context():
+                prospector = ProspectorService()
+                prospector.run_job(job_id)
+        
+        import threading
+        thread = threading.Thread(target=run_job_with_context, args=(job.id,))
+        thread.daemon = True
+        thread.start()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Job #{job_id} has been resumed and is now running.',
+            'new_status': 'running'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'Failed to resume job: {str(e)}'
+        }), 500
+
+@app.route('/api/job/<int:job_id>/force-stop', methods=['POST'])
+def api_force_stop_job(job_id):
+    """Force stop a stuck job and mark it as failed"""
+    try:
+        job = ProspectingJob.query.get_or_404(job_id)
+        
+        if job.status not in ['running', 'paused']:
+            return jsonify({
+                'success': False,
+                'error': f'Cannot force stop job with status: {job.status}.'
+            }), 400
+        
+        # Force stop the job
+        job.status = 'failed'
+        job.error_message = 'Job was force stopped due to being stuck or unresponsive'
+        job.completed_at = datetime.utcnow()
+        job.current_county = None
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Job #{job_id} has been force stopped and marked as failed. You can now delete it if needed.',
+            'new_status': 'failed'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'Failed to force stop job: {str(e)}'
+        }), 500
+
 @app.route('/api/job/<int:job_id>/delete', methods=['DELETE', 'POST'])
 def api_delete_job(job_id):
     """Delete a job and all its associated results"""

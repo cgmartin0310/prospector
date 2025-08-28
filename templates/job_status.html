@@ -13,13 +13,19 @@
             <i class="fas fa-arrow-left"></i> Dashboard
         </a>
         {% if job.status == 'running' %}
-        <button class="btn btn-warning" onclick="pauseJob({{ job.id }})">
-            <i class="fas fa-pause"></i> Pause
-        </button>
-        {% elif job.status == 'paused' %}
-        <button class="btn btn-success" onclick="resumeJob({{ job.id }})">
-            <i class="fas fa-play"></i> Resume
-        </button>
+                                <button class="btn btn-warning me-1" onclick="pauseJob({{ job.id }})">
+                            <i class="fas fa-pause"></i> Pause
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="forceStopJob({{ job.id }})">
+                            <i class="fas fa-stop"></i> Force Stop
+                        </button>
+                        {% elif job.status == 'paused' %}
+                        <button class="btn btn-success me-1" onclick="resumeJob({{ job.id }})">
+                            <i class="fas fa-play"></i> Resume
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="forceStopJob({{ job.id }})">
+                            <i class="fas fa-stop"></i> Force Stop
+                        </button>
         {% endif %}
         {% if job.status != 'running' %}
         <button class="btn btn-outline-danger ms-2" 
@@ -243,16 +249,71 @@
 
 <script>
 function pauseJob(jobId) {
-    if (confirm('Are you sure you want to pause this job?')) {
-        // Implementation for pausing jobs
-        alert('Pause functionality would be implemented here');
+    if (confirm('Are you sure you want to pause this job?\n\nThe job will stop processing new counties but can be resumed later.')) {
+        fetch(`/api/job/${jobId}/pause`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error pausing job: ' + error.message);
+        });
     }
 }
 
 function resumeJob(jobId) {
-    if (confirm('Resume this job?')) {
-        // Implementation for resuming jobs
-        alert('Resume functionality would be implemented here');
+    if (confirm('Resume this job?\n\nThe job will continue processing from where it left off.')) {
+        fetch(`/api/job/${jobId}/resume`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error resuming job: ' + error.message);
+        });
+    }
+}
+
+function forceStopJob(jobId) {
+    if (confirm('Force stop this job?\n\nThis will immediately stop the job and mark it as failed. This action is useful for stuck jobs that won\'t respond to pause.\n\nThis cannot be undone.')) {
+        fetch(`/api/job/${jobId}/force-stop`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error force stopping job: ' + error.message);
+        });
     }
 }
 
