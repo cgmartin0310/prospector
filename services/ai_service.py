@@ -27,21 +27,21 @@ class AIService:
                     api_key=Config.OPENAI_API_KEY,
                     http_client=http_client
                 )
-                self.model = "gpt-4"
+                self.model = "gpt-4o"
             except Exception as e:
                 print(f"OpenAI client initialization error: {e}")
                 # Fallback to legacy API if available
                 if 'openai' in globals():
                     openai.api_key = Config.OPENAI_API_KEY
                     self.client = None
-                    self.model = "gpt-4"
+                    self.model = "gpt-4o"
                 else:
                     raise e
         else:
             # Legacy OpenAI API
             openai.api_key = Config.OPENAI_API_KEY
             self.client = None
-            self.model = "gpt-4"
+            self.model = "gpt-4o"
     
     def research_county(self, county_name: str, state_name: str, search_query: str) -> Dict:
         """
