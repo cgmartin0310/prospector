@@ -459,20 +459,134 @@ def populate_all_counties():
 
 @app.route('/admin/migrate-database')
 def admin_migrate_database():
-    """Admin endpoint to run database migration for new key personnel columns"""
+    """Admin endpoint to trigger database migration"""
     try:
         from migrate_database import migrate_database
-        
-        # Run the migration
         migrate_database()
+        return jsonify({"success": True, "message": "Database migration completed successfully"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/map')
+def map_dashboard():
+    """Interactive US map dashboard"""
+    return render_template('map_dashboard.html')
+
+@app.route('/api/map/states')
+def api_map_states():
+    """Get state-level statistics for map visualization"""
+    try:
+        from sqlalchemy import func, distinct
+        
+        # Get state coverage statistics
+        state_stats = db.session.query(
+            State.abbreviation,
+            State.name,
+            func.count(SearchResult.id).label('team_count'),
+            func.count(distinct(SearchResult.county_id)).label('counties_with_teams'),
+            func.count(distinct(County.id)).label('total_counties')
+        ).outerjoin(County).outerjoin(SearchResult, County.id == SearchResult.county_id).group_by(State.id, State.abbreviation, State.name).all()
+        
+        # Format data for frontend
+        map_data = []
+        for stat in state_stats:
+            map_data.append({
+                'state_code': stat.abbreviation,
+                'state_name': stat.name,
+                'team_count': stat.team_count or 0,
+                'counties_with_teams': stat.counties_with_teams or 0,
+                'total_counties': stat.total_counties or 0,
+                'coverage_percentage': round((stat.counties_with_teams or 0) / max(stat.total_counties or 1, 1) * 100, 1)
+            })
+        
+        return jsonify({"success": True, "data": map_data})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/map/state/<state_abbr>')
+def api_map_state_details(state_abbr):
+    """Get detailed results for a specific state"""
+    try:
+        state = State.query.filter_by(abbreviation=state_abbr.upper()).first()
+        if not state:
+            return jsonify({"success": False, "error": "State not found"})
+        
+        # Get existing teams in this state
+        teams = db.session.query(SearchResult).join(County).filter(
+            County.state_id == state.id,
+            SearchResult.organization_name.isnot(None)
+        ).order_by(SearchResult.confidence_score.desc()).limit(20).all()
+        
+        # Get recent jobs for this state
+        recent_jobs = ProspectingJob.query.filter_by(state_id=state.id).order_by(
+            ProspectingJob.created_at.desc()
+        ).limit(5).all()
+        
+        team_data = []
+        for team in teams:
+            team_data.append({
+                'id': team.id,
+                'organization_name': team.organization_name,
+                'county': team.county.name,
+                'key_personnel_name': team.key_personnel_name,
+                'key_personnel_title': team.key_personnel_title,
+                'key_personnel_phone': team.key_personnel_phone,
+                'key_personnel_email': team.key_personnel_email,
+                'confidence_score': team.confidence_score,
+                'created_at': team.created_at.strftime('%Y-%m-%d')
+            })
+        
+        job_data = []
+        for job in recent_jobs:
+            job_data.append({
+                'id': job.id,
+                'search_query': job.search_query,
+                'status': job.status,
+                'progress_percentage': job.progress_percentage,
+                'created_at': job.created_at.strftime('%Y-%m-%d %H:%M')
+            })
         
         return jsonify({
             "success": True,
-            "message": "Database migration completed successfully! New key personnel columns have been added."
+            "state": {
+                "name": state.name,
+                "abbreviation": state.abbreviation
+            },
+            "teams": team_data,
+            "recent_jobs": job_data
         })
-        
     except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/map/start-search/<state_abbr>', methods=['POST'])
+def api_map_start_search(state_abbr):
+    """Start a new search from map interface"""
+    try:
+        data = request.get_json()
+        search_query = data.get('search_query', 'overdose response team')
+        
+        state = State.query.filter_by(abbreviation=state_abbr.upper()).first()
+        if not state:
+            return jsonify({"success": False, "error": "State not found"})
+        
+        # Create new job
+        job = ProspectingJob(
+            search_query=search_query,
+            state_id=state.id,
+            status='pending'
+        )
+        db.session.add(job)
+        db.session.commit()
+        
+        # Start the job in background
+        from services.prospector import ProspectorService
+        prospector = ProspectorService()
+        prospector.start_job(job.id)
+        
         return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+            "success": True,
+            "job_id": job.id,
+            "message": f"Search started for {state.name}"
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})

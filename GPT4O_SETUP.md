@@ -19,18 +19,18 @@ To use different models, add this environment variable to your Render deployment
 
 | Key | Value | Description |
 |-----|-------|-------------|
-| `OPENAI_MODEL` | `gpt-5` | Use GPT-5 (newest, most capable) |
-| `OPENAI_MODEL` | `gpt-4o` | Use GPT-4o (fast, cost-effective) |
+| `OPENAI_MODEL` | `gpt-4o` | Use GPT-4o (fast, cost-effective, **RECOMMENDED**) |
 | `OPENAI_MODEL` | `gpt-4o-mini` | Use GPT-4o-mini (fastest, cheapest) |
+| `OPENAI_MODEL` | `gpt-5` | Use GPT-5 (newest, most capable, but may be too conservative) |
 | `OPENAI_MODEL` | `gpt-4` | Use GPT-4 (legacy, high quality) |
 
 ## Model Comparison
 
 | Model | Speed | Cost | Quality | Reasoning | Best For |
 |-------|-------|------|---------|-----------|----------|
-| `gpt-5` | Medium | High | Excellent | Superior | Complex research, accuracy-critical tasks |
-| `gpt-4o` | Fast | Medium | High | Good | Production use, balanced performance |
+| `gpt-4o` | Fast | Medium | High | Good | **Production use, balanced performance** |
 | `gpt-4o-mini` | Very Fast | Low | Good | Basic | Testing, development, cost-sensitive |
+| `gpt-5` | Medium | High | Excellent | Superior | Complex research, accuracy-critical tasks |
 | `gpt-4` | Slow | High | Very High | Excellent | When maximum quality needed |
 
 ## Setting Up in Render
@@ -40,31 +40,20 @@ To use different models, add this environment variable to your Render deployment
 3. Click on "Environment" tab
 4. Add a new environment variable:
    - **Key**: `OPENAI_MODEL`
-   - **Value**: `gpt-5` (or your preferred model)
+   - **Value**: `gpt-4o` (recommended for better results)
 5. Click "Save Changes"
 6. Your service will automatically redeploy
 
-## Model-Specific Features
+## **RECOMMENDATION: Use GPT-4o**
 
-### GPT-5
-- **New Responses API**: Uses the latest OpenAI API
-- **Larger Context**: 6000 max tokens
-- **Better Reasoning**: Superior at complex tasks
-- **More Detailed Prompts**: Enhanced research instructions
-- **Higher Confidence**: Default confidence score of 0.95
+Based on testing, **GPT-4o is recommended** because:
+- ✅ **Better balance** of finding organizations vs. being too conservative
+- ✅ **Faster processing** than GPT-5
+- ✅ **Lower cost** than GPT-5
+- ✅ **Good accuracy** without being overly restrictive
+- ✅ **Proven reliability** for this type of research
 
-### GPT-4o
-- **Chat Completions API**: Standard OpenAI API
-- **Medium Context**: 4000 max tokens
-- **Good Balance**: Speed, cost, and quality
-- **JSON Response Format**: Forced JSON responses
-- **Standard Confidence**: Default confidence score of 0.9
-
-### GPT-4o-mini
-- **Fastest**: Optimized for speed
-- **Lowest Cost**: Most cost-effective
-- **Basic Research**: Good for simple queries
-- **Development**: Perfect for testing
+GPT-5 may be too conservative and miss organizations that GPT-4o would find.
 
 ## Testing Different Models
 
@@ -89,9 +78,9 @@ If any model is returning no results:
 ### Model-Specific Issues
 
 **GPT-5 Issues:**
+- May be too conservative and miss organizations
+- Try switching to `gpt-4o` for better results
 - Ensure you have GPT-5 access (may require waitlist)
-- Check if the responses API is working
-- Verify your OpenAI account supports GPT-5
 
 **GPT-4o Issues:**
 - Check if GPT-4o is available in your region
@@ -122,16 +111,16 @@ python3 check_database.py
 
 | Model | Relative Cost | Use Case |
 |-------|---------------|----------|
-| `gpt-5` | High | When maximum accuracy is critical |
-| `gpt-4o` | Medium | Production use, good balance |
+| `gpt-4o` | Medium | **Production use, good balance** |
 | `gpt-4o-mini` | Low | Testing, development, cost-sensitive |
+| `gpt-5` | High | When maximum accuracy is critical |
 | `gpt-4` | Very High | Legacy applications |
 
 ## Performance Tips
 
 1. **Start with GPT-4o**: Good balance for most use cases
-2. **Use GPT-5 for critical research**: When accuracy is paramount
-3. **Use GPT-4o-mini for testing**: Fast and cheap for development
+2. **Use GPT-4o-mini for testing**: Fast and cheap for development
+3. **Use GPT-5 only when needed**: When accuracy is paramount
 4. **Monitor costs**: Track usage in OpenAI dashboard
 5. **Compare results**: Test different models on the same queries
 

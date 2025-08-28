@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+
+{% block title %}US Map Dashboard - Prospector{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map-container {
+        position: relative;
+        height: 80vh;
+        width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    #us-map {
+        height: 100%;
+        width: 100%;
+    }
+    
+    #state-details-panel {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 350px;
+        max-height: calc(100% - 40px);
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+    }
+    
+    .panel-header {
+        background: #2c3e50;
+        color: white;
+        padding: 15px;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .panel-content {
+        padding: 20px;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        color: #6c757d;
+        text-transform: uppercase;
+    }
+    
+    .team-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .team-item {
+        border-bottom: 1px solid #eee;
+        padding: 10px 0;
+    }
+    
+    .team-item:last-child {
+        border-bottom: none;
+    }
+    
+    .team-name {
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+    
+    .team-county {
+        font-size: 12px;
+        color: #6c757d;
+    }
+    
+    .team-contact {
+        font-size: 12px;
+        color: #28a745;
+        margin-top: 5px;
+    }
+    
+    .search-form {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 10px;
+    }
+    
+    .btn-start-search {
+        width: 100%;
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    
+    .btn-start-search:hover {
+        background: #218838;
+    }
+    
+    .btn-start-search:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+    }
+    
+    .legend {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        background: white;
+        padding: 15px;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 3px;
+        margin-right: 10px;
+        border: 1px solid #ccc;
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 20px;
+        color: #6c757d;
+    }
+    
+    .error {
+        color: #dc3545;
+        padding: 10px;
+        background: #f8d7da;
+        border-radius: 4px;
+        margin: 10px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>US Overdose Response Team Coverage Map</h1>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+            
+            <div id="map-container">
+                <div id="us-map"></div>
+                
+                <div id="state-details-panel">
+                    <div class="panel-header">
+                        <h4 id="state-name">Select a State</h4>
+                    </div>
+                    <div class="panel-content">
+                        <div id="state-content">
+                            <div class="loading">Click on a state to view details</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="legend">
+                    <h6>Coverage Legend</h6>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff4444;"></div>
+                        <span>No teams found</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffaa00;"></div>
+                        <span>1-2 teams</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffff00;"></div>
+                        <span>3-5 teams</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00ff00;"></div>
+                        <span>6-10 teams</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #008800;"></div>
+                        <span>10+ teams</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let map;
+let stateLayers = {};
+let selectedState = null;
+
+// Initialize map
+document.addEventListener('DOMContentLoaded', function() {
+    initializeMap();
+    loadStateData();
+});
+
+function initializeMap() {
+    // Initialize the map centered on the US
+    map = L.map('us-map').setView([39.8283, -98.5795], 4);
+    
+    // Add a base tile layer (you can choose different styles)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Load US states GeoJSON
+    fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
+        .then(response => response.json())
+        .then(data => {
+            createStateLayers(data);
+        })
+        .catch(error => {
+            console.error('Error loading map data:', error);
+            // Fallback to a simpler approach if the external data fails
+            createSimpleStateLayers();
+        });
+}
+
+function createStateLayers(geoJsonData) {
+    L.geoJSON(geoJsonData, {
+        style: function(feature) {
+            const stateCode = feature.properties.name;
+            return {
+                fillColor: '#cccccc',
+                weight: 2,
+                opacity: 1,
+                color: 'white',
+                fillOpacity: 0.7
+            };
+        },
+        onEachFeature: function(feature, layer) {
+            const stateCode = feature.properties.name;
+            stateLayers[stateCode] = layer;
+            
+            layer.on('click', function() {
+                onStateClick(stateCode);
+            });
+            
+            layer.on('mouseover', function() {
+                layer.setStyle({
+                    fillOpacity: 0.9,
+                    weight: 3
+                });
+            });
+            
+            layer.on('mouseout', function() {
+                if (selectedState !== stateCode) {
+                    layer.setStyle({
+                        fillOpacity: 0.7,
+                        weight: 2
+                    });
+                }
+            });
+        }
+    }).addTo(map);
+}
+
+function createSimpleStateLayers() {
+    // Fallback: Create simple rectangular regions for major states
+    const states = [
+        {name: 'CA', bounds: [[32.5, -124.5], [42, -114.5]]},
+        {name: 'TX', bounds: [[26, -106.5], [36.5, -93.5]]},
+        {name: 'FL', bounds: [[24.5, -87.5], [31, -80]]},
+        {name: 'NY', bounds: [[40.5, -79.8], [45, -71.8]]},
+        // Add more states as needed
+    ];
+    
+    states.forEach(state => {
+        const rect = L.rectangle(state.bounds, {
+            color: 'white',
+            weight: 2,
+            fillColor: '#cccccc',
+            fillOpacity: 0.7
+        }).addTo(map);
+        
+        stateLayers[state.name] = rect;
+        
+        rect.on('click', function() {
+            onStateClick(state.name);
+        });
+    });
+}
+
+function loadStateData() {
+    fetch('/api/map/states')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateMapColors(data.data);
+            } else {
+                console.error('Error loading state data:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching state data:', error);
+        });
+}
+
+function updateMapColors(stateData) {
+    stateData.forEach(state => {
+        const layer = stateLayers[state.state_code];
+        if (layer) {
+            const color = getColorByTeamCount(state.team_count);
+            layer.setStyle({
+                fillColor: color
+            });
+        }
+    });
+}
+
+function getColorByTeamCount(count) {
+    if (count === 0) return '#ff4444';      // Red - no teams
+    if (count <= 2) return '#ffaa00';       // Orange - low coverage
+    if (count <= 5) return '#ffff00';       // Yellow - moderate
+    if (count <= 10) return '#00ff00';      // Green - good coverage
+    return '#008800';                       // Dark green - excellent
+}
+
+function onStateClick(stateCode) {
+    // Reset previous selection
+    if (selectedState && stateLayers[selectedState]) {
+        stateLayers[selectedState].setStyle({
+            fillOpacity: 0.7,
+            weight: 2
+        });
+    }
+    
+    // Highlight selected state
+    if (stateLayers[stateCode]) {
+        stateLayers[stateCode].setStyle({
+            fillOpacity: 0.9,
+            weight: 3
+        });
+    }
+    
+    selectedState = stateCode;
+    
+    // Load state details
+    loadStateDetails(stateCode);
+}
+
+function loadStateDetails(stateCode) {
+    const panel = document.getElementById('state-details-panel');
+    const content = document.getElementById('state-content');
+    
+    panel.style.display = 'block';
+    content.innerHTML = '<div class="loading">Loading state details...</div>';
+    
+    fetch(`/api/map/state/${stateCode}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayStateDetails(data);
+            } else {
+                content.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+            }
+        })
+        .catch(error => {
+            content.innerHTML = `<div class="error">Error loading state details: ${error.message}</div>`;
+        });
+}
+
+function displayStateDetails(data) {
+    const content = document.getElementById('state-content');
+    const stateName = document.getElementById('state-name');
+    
+    stateName.textContent = data.state.name;
+    
+    const teams = data.teams;
+    const jobs = data.recent_jobs;
+    
+    let html = `
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">${teams.length}</div>
+                <div class="stat-label">Teams Found</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">${jobs.length}</div>
+                <div class="stat-label">Recent Searches</div>
+            </div>
+        </div>
+    `;
+    
+    if (teams.length > 0) {
+        html += `
+            <h6>Recent Teams Found</h6>
+            <div class="team-list">
+        `;
+        
+        teams.slice(0, 5).forEach(team => {
+            html += `
+                <div class="team-item">
+                    <div class="team-name">${team.organization_name}</div>
+                    <div class="team-county">${team.county} County</div>
+                    ${team.key_personnel_name ? `
+                        <div class="team-contact">
+                            ${team.key_personnel_name} (${team.key_personnel_title || 'Contact'})
+                            ${team.key_personnel_email ? `<br>📧 ${team.key_personnel_email}` : ''}
+                            ${team.key_personnel_phone ? `<br>📞 ${team.key_personnel_phone}` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        
+        html += `</div>`;
+    } else {
+        html += `<p>No teams found yet for this state.</p>`;
+    }
+    
+    html += `
+        <div class="search-form">
+            <h6>Start New Search</h6>
+            <input type="text" id="search-query" class="search-input" 
+                   placeholder="e.g., overdose response team, harm reduction" 
+                   value="overdose response team">
+            <button class="btn-start-search" onclick="startSearch('${data.state.abbreviation}')">
+                Start Search for ${data.state.name}
+            </button>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+}
+
+function startSearch(stateCode) {
+    const searchQuery = document.getElementById('search-query').value;
+    const button = document.querySelector('.btn-start-search');
+    
+    button.disabled = true;
+    button.textContent = 'Starting Search...';
+    
+    fetch(`/api/map/start-search/${stateCode}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            search_query: searchQuery
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            button.textContent = 'Search Started!';
+            button.style.background = '#28a745';
+            
+            // Redirect to job status page after a short delay
+            setTimeout(() => {
+                window.location.href = `/job/${data.job_id}`;
+            }, 1500);
+        } else {
+            button.textContent = 'Error: ' + data.error;
+            button.style.background = '#dc3545';
+            setTimeout(() => {
+                button.disabled = false;
+                button.textContent = `Start Search for ${selectedState}`;
+                button.style.background = '#28a745';
+            }, 3000);
+        }
+    })
+    .catch(error => {
+        button.textContent = 'Error: ' + error.message;
+        button.style.background = '#dc3545';
+        setTimeout(() => {
+            button.disabled = false;
+            button.textContent = `Start Search for ${selectedState}`;
+            button.style.background = '#28a745';
+        }, 3000);
+    });
+}
+</script>
+{% endblock %}
