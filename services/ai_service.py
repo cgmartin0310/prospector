@@ -27,21 +27,21 @@ class AIService:
                     api_key=Config.OPENAI_API_KEY,
                     http_client=http_client
                 )
-                self.model = "gpt-4o"  # Latest GPT-4 model (faster, cheaper, better)
+                self.model = "gpt-5"  # Latest GPT-5 model with advanced reasoning
             except Exception as e:
                 print(f"OpenAI client initialization error: {e}")
                 # Fallback to legacy API if available
                 if 'openai' in globals():
                     openai.api_key = Config.OPENAI_API_KEY
                     self.client = None
-                    self.model = "gpt-4o"  # Latest GPT-4 model (faster, cheaper, better)
+                    self.model = "gpt-5"  # Latest GPT-5 model with advanced reasoning
                 else:
                     raise e
         else:
             # Legacy OpenAI API
             openai.api_key = Config.OPENAI_API_KEY
             self.client = None
-            self.model = "gpt-4"
+            self.model = "gpt-5"
     
     def research_county(self, county_name: str, state_name: str, search_query: str) -> Dict:
         """
@@ -53,25 +53,18 @@ class AIService:
         
         try:
             if self.client:
-                # New OpenAI client API
-                response = self.client.chat.completions.create(
+                # GPT-5 with new Responses API for better reasoning
+                response = self.client.responses.create(
                     model=self.model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are a thorough researcher specializing in finding public health and social service organizations. Provide accurate, factual information based on real organizations. If you cannot find specific information, clearly state that rather than making assumptions."
-                        },
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ],
-                    temperature=0.3,  # Lower temperature for more factual responses
-                    max_tokens=2000
+                    input=f"""You are a thorough researcher specializing in finding public health and social service organizations. Provide accurate, factual information based on real organizations. If you cannot find specific information, clearly state that rather than making assumptions.
+
+{prompt}""",
+                    reasoning={"effort": "medium"},  # Medium reasoning for balanced accuracy and speed
+                    text={"verbosity": "medium"}  # Medium verbosity for detailed but concise responses
                 )
-                raw_response = response.choices[0].message.content
+                raw_response = response.output_text
             else:
-                # Legacy OpenAI API
+                # Legacy OpenAI API fallback with GPT-5 Chat Completions
                 response = openai.ChatCompletion.create(
                     model=self.model,
                     messages=[
@@ -84,8 +77,8 @@ class AIService:
                             "content": prompt
                         }
                     ],
-                    temperature=0.3,  # Lower temperature for more factual responses
-                    max_tokens=2000
+                    reasoning_effort="medium",  # GPT-5 reasoning effort in Chat Completions API
+                    verbosity="medium"  # GPT-5 verbosity in Chat Completions API
                 )
                 raw_response = response.choices[0].message.content
             
