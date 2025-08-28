@@ -106,32 +106,90 @@ class ProspectorService:
         
         if not research_result.get('success', False):
             print(f"AI research failed for {county_name} County")
-            # If AI research failed, check if we should delete existing result
+            # If AI research failed, save a record for progress tracking
             existing_result = SearchResult.query.filter_by(
                 job_id=job_id, 
                 county_id=county_id
             ).first()
+            
             if existing_result:
-                # If an existing result exists, delete it
-                db.session.delete(existing_result)
+                # Update existing record to indicate research failed
+                existing_result.organization_name = None
+                existing_result.description = f"Search failed: {research_result.get('error', 'Unknown error')}"
+                existing_result.confidence_score = 0.0
+                existing_result.ai_response_raw = research_result.get('raw_response', '')
+                # Clear key personnel fields
+                existing_result.key_personnel_name = ''
+                existing_result.key_personnel_title = ''
+                existing_result.key_personnel_phone = ''
+                existing_result.key_personnel_email = ''
+                existing_result.contact_info = '{}'
                 db.session.commit()
-                print(f"Deleted existing result for {county_name} due to failed AI research.")
+                print(f"Updated existing result for {county_name} to indicate research failed.")
+            else:
+                # Create new record to indicate research failed
+                result = SearchResult(
+                    job_id=job_id,
+                    county_id=county_id,
+                    organization_name=None,
+                    description=f"Search failed: {research_result.get('error', 'Unknown error')}",
+                    confidence_score=0.0,
+                    ai_response_raw=research_result.get('raw_response', ''),
+                    key_personnel_name='',
+                    key_personnel_title='',
+                    key_personnel_phone='',
+                    key_personnel_email='',
+                    contact_info='{}'
+                )
+                db.session.add(result)
+                db.session.commit()
+                print(f"Saved 'research failed' record for {county_name} County.")
             return
 
         organizations = research_result.get('organizations', [])
 
         if not organizations:
             print(f"No organizations found for {county_name} County")
-            # If AI research found no organizations, check if we should delete existing result
+            # If AI research found no organizations, save a "no results" record for progress tracking
             existing_result = SearchResult.query.filter_by(
                 job_id=job_id, 
                 county_id=county_id
             ).first()
+            
             if existing_result:
-                # If an existing result exists, delete it
-                db.session.delete(existing_result)
+                # Update existing record to indicate no organizations found
+                existing_result.organization_name = None
+                existing_result.description = "No organizations found matching the search criteria"
+                existing_result.additional_notes = research_result.get('search_summary', '')
+                existing_result.confidence_score = 0.0
+                existing_result.ai_response_raw = research_result.get('raw_response', '')
+                # Clear key personnel fields
+                existing_result.key_personnel_name = ''
+                existing_result.key_personnel_title = ''
+                existing_result.key_personnel_phone = ''
+                existing_result.key_personnel_email = ''
+                existing_result.contact_info = '{}'
                 db.session.commit()
-                print(f"Deleted existing result for {county_name} due to no organizations found.")
+                print(f"Updated existing result for {county_name} to indicate no organizations found.")
+            else:
+                # Create new record to indicate no organizations found
+                result = SearchResult(
+                    job_id=job_id,
+                    county_id=county_id,
+                    organization_name=None,
+                    description="No organizations found matching the search criteria",
+                    additional_notes=research_result.get('search_summary', ''),
+                    confidence_score=0.0,
+                    ai_response_raw=research_result.get('raw_response', ''),
+                    key_personnel_name='',
+                    key_personnel_title='',
+                    key_personnel_phone='',
+                    key_personnel_email='',
+                    contact_info='{}'
+                )
+                db.session.add(result)
+                db.session.commit()
+                print(f"Saved 'no results' record for {county_name} County.")
             return
 
         # Find the organization with the highest confidence score
