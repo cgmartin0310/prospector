@@ -48,9 +48,13 @@ class AIService:
         """
         Research a specific county for organizations matching the search query.
         Each call creates a fresh conversation to prevent hallucination.
+        Uses Golden Dataset examples to improve accuracy.
         """
         
-        prompt = self._build_research_prompt(county_name, state_name, search_query)
+        # Get golden examples to improve the search
+        golden_examples = self._get_golden_examples(county_name, state_name, search_query)
+        
+        prompt = self._build_research_prompt(county_name, state_name, search_query, golden_examples)
         
         try:
             # Adjust parameters based on model
@@ -142,13 +146,17 @@ class AIService:
                 "organizations": []
             }
     
-    def _build_research_prompt(self, county_name: str, state_name: str, search_query: str) -> str:
+    def _build_research_prompt(self, county_name: str, state_name: str, search_query: str, golden_examples: List = None) -> str:
         """Build a detailed research prompt for the AI"""
         
         if 'gpt-5' in self.model:
             # GPT-5 specific prompt - more detailed and structured
+            golden_examples_text = self._format_golden_examples(golden_examples) if golden_examples else ""
+            
             prompt = f"""
 You are a professional researcher tasked with finding organizations in {county_name} County, {state_name} that match this specific criteria: "{search_query}"
+
+{golden_examples_text}
 
 CRITICAL REQUIREMENTS:
 1. Focus EXCLUSIVELY on {county_name} County. Do not include organizations from other counties unless they explicitly serve {county_name} County.
@@ -156,6 +164,7 @@ CRITICAL REQUIREMENTS:
 3. Only include organizations you can verify exist.
 4. If no organizations are found, clearly state this.
 5. PRIORITY: Find the key personnel (director, manager, coordinator, head) of each organization and their direct contact information.
+6. Use the examples above as templates for what constitutes a high-quality, verified result.
 
 CRITICAL - NO MADE UP INFORMATION:
 - NEVER make up names, phone numbers, or email addresses
@@ -204,12 +213,18 @@ Respond with ONLY valid JSON in the exact format specified above.
 """
         else:
             # Standard prompt for GPT-4o and other models
+            golden_examples_text = self._format_golden_examples(golden_examples) if golden_examples else ""
+            
             prompt = f"""
 Research organizations in {county_name} County, {state_name} that match: "{search_query}"
+
+{golden_examples_text}
 
 IMPORTANT: Focus ONLY on {county_name} County. Do not include organizations from other counties unless they explicitly serve {county_name} County.
 
 PRIORITY: Find the key personnel (director, manager, coordinator, head) of each organization and their direct contact information.
+
+Use the examples above as templates for what constitutes a high-quality, verified result.
 
 CRITICAL - NO MADE UP INFORMATION:
 - NEVER make up names, phone numbers, or email addresses
@@ -257,6 +272,69 @@ Respond with ONLY valid JSON in this exact format:
 }}
 """
         return prompt
+    
+    def _get_golden_examples(self, county_name: str, state_name: str, search_query: str) -> List[Dict]:
+        """
+        Get relevant golden examples to improve AI search accuracy.
+        Returns examples from similar counties/states and matching search categories.
+        """
+        try:
+            # Import here to avoid circular imports
+            from models import GoldenResult, County, State
+            
+            # Get golden examples from the same state first
+            state_examples = GoldenResult.query.join(County).join(State).filter(
+                State.name == state_name,
+                GoldenResult.search_category == "overdose_response"
+            ).limit(3).all()
+            
+            # If not enough state examples, get from similar search categories
+            if len(state_examples) < 3:
+                category_examples = GoldenResult.query.filter(
+                    GoldenResult.search_category == "overdose_response"
+                ).limit(5 - len(state_examples)).all()
+                
+                # Combine and remove duplicates
+                all_examples = list(state_examples) + list(category_examples)
+                unique_examples = []
+                seen_names = set()
+                
+                for example in all_examples:
+                    if example.organization_name not in seen_names:
+                        unique_examples.append(example)
+                        seen_names.add(example.organization_name)
+                        if len(unique_examples) >= 5:
+                            break
+                
+                return unique_examples
+            
+            return list(state_examples)
+            
+        except Exception as e:
+            print(f"Error getting golden examples: {e}")
+            return []
+    
+    def _format_golden_examples(self, golden_examples: List) -> str:
+        """
+        Format golden examples for inclusion in AI prompts.
+        """
+        if not golden_examples:
+            return ""
+        
+        examples_text = "\n\nEXAMPLES OF HIGH-QUALITY RESULTS:\n"
+        
+        for i, example in enumerate(golden_examples[:3], 1):  # Limit to 3 examples
+            examples_text += f"""
+Example {i}: {example.organization_name}
+- Location: {example.county.name} County, {example.state.name}
+- Key Personnel: {example.key_personnel_name or 'Not specified'} ({example.key_personnel_title or 'Not specified'})
+- Contact: {example.key_personnel_phone or 'Not specified'} | {example.key_personnel_email or 'Not specified'}
+- Services: {example.description or 'Not specified'}
+- Why this is a good example: Verified overdose response services with real contact information
+"""
+        
+        examples_text += "\nUse these examples as templates for what constitutes a high-quality, verified result."
+        return examples_text
     
     def _parse_ai_response(self, raw_response: str, county_name: str, state_name: str) -> Dict:
         """Parse the AI response and extract structured data"""
