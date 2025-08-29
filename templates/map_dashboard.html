@@ -8,15 +8,15 @@
 <style>
     #map-container {
         position: relative;
-        height: 80vh;
+        height: 70vh;
         width: 100%;
         border-radius: 8px;
         overflow: hidden;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        background: #f8f9fa;
-        min-height: 600px;
-        border: 3px solid #007bff;
         background: #e9ecef;
+        min-height: 500px;
+        border: 3px solid #007bff;
+        margin-top: 20px;
     }
     
     #us-map {
@@ -257,21 +257,20 @@
             </div>
             
             <!-- Simple JavaScript Test -->
-            <div class="simple-test">
-                <h4>JavaScript Test</h4>
-                <p>Let's test if JavaScript is working on Render:</p>
-                <button class="test-button" id="test-js-btn">Test Basic JavaScript</button>
-                <button class="test-button" id="test-fetch-btn">Test API Fetch</button>
-                <button class="test-button" id="test-leaflet-btn">Test Leaflet Library</button>
-                <button class="test-button" id="test-map-route-btn">Test Map Route</button>
-                <div id="test-results"></div>
+            <div class="simple-test" style="padding: 10px; margin: 10px 0;">
+                <h6 style="margin: 0 0 10px 0;">Debug Tests:</h6>
+                <button class="test-button" id="test-js-btn" style="padding: 5px 10px; font-size: 12px;">JS</button>
+                <button class="test-button" id="test-fetch-btn" style="padding: 5px 10px; font-size: 12px;">API</button>
+                <button class="test-button" id="test-leaflet-btn" style="padding: 5px 10px; font-size: 12px;">Leaflet</button>
+                <button class="test-button" id="test-map-route-btn" style="padding: 5px 10px; font-size: 12px;">Route</button>
+                <div id="test-results" style="margin-top: 5px; font-size: 11px;"></div>
             </div>
             
             <div id="map-container">
-                <div style="position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 5px; border-radius: 3px; font-size: 12px; z-index: 1001;">
-                    Map Container Active
+                <div style="position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.95); padding: 8px; border-radius: 4px; font-size: 14px; z-index: 1001; border: 2px solid #007bff; font-weight: bold;">
+                    🗺️ MAP CONTAINER ACTIVE
                 </div>
-                <div id="us-map"></div>
+                <div id="us-map" style="height: 100%; width: 100%; background: #f0f0f0;"></div>
                 
                 <div class="debug-info" id="debug-info">
                     Loading map...
@@ -287,6 +286,13 @@
                     </ul>
                     <br>
                     <a href="{{ url_for('view_results') }}" class="btn btn-primary">View Results Table Instead</a>
+                </div>
+                
+                <!-- Simple map placeholder -->
+                <div id="map-placeholder" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #666; font-size: 18px; z-index: 999;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">🗺️</div>
+                    <div>Loading US Map...</div>
+                    <div style="font-size: 12px; margin-top: 10px;">If you don't see the map, check the console for errors</div>
                 </div>
                 
                 <div id="state-details-panel">
@@ -502,6 +508,12 @@ function initializeMap() {
         }
         
         updateDebugInfo('Leaflet available, creating map...');
+        
+        // Hide the placeholder
+        const placeholder = document.getElementById('map-placeholder');
+        if (placeholder) {
+            placeholder.style.display = 'none';
+        }
         
         // Initialize the map centered on the US
         map = L.map('us-map').setView([39.8283, -98.5795], 4);
