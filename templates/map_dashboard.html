@@ -3,8 +3,8 @@
 {% block title %}US Map Dashboard - Prospector{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
     #map-container {
         position: relative;
@@ -423,16 +423,54 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Wait a moment for Leaflet to be fully loaded, then initialize map
     updateDebugInfo('DOM loaded, waiting for Leaflet...');
-    setTimeout(function() {
+    
+    // Try multiple times to load Leaflet
+    let leafletAttempts = 0;
+    const maxAttempts = 5;
+    
+    function tryLoadLeaflet() {
+        leafletAttempts++;
+        updateDebugInfo(`Checking for Leaflet (attempt ${leafletAttempts}/${maxAttempts})...`);
+        
         if (typeof L !== 'undefined') {
             updateDebugInfo('Leaflet available, initializing map...');
             initializeMap();
             loadStateData();
+        } else if (leafletAttempts < maxAttempts) {
+            updateDebugInfo(`Leaflet not ready, retrying in 500ms...`);
+            setTimeout(tryLoadLeaflet, 500);
         } else {
-            updateDebugInfo('ERROR: Leaflet still not available after delay');
-            showFallbackMessage();
+            updateDebugInfo('ERROR: Leaflet failed to load after multiple attempts');
+            // Try loading Leaflet manually
+            loadLeafletManually();
         }
-    }, 1000);
+    }
+    
+    function loadLeafletManually() {
+        updateDebugInfo('Attempting to load Leaflet manually...');
+        
+        // Add CSS first
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css';
+        document.head.appendChild(link);
+        
+        // Then add script
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
+        script.onload = function() {
+            updateDebugInfo('Leaflet loaded manually, initializing map...');
+            initializeMap();
+            loadStateData();
+        };
+        script.onerror = function() {
+            updateDebugInfo('ERROR: Failed to load Leaflet from CDN');
+            showFallbackMessage();
+        };
+        document.head.appendChild(script);
+    }
+    
+    setTimeout(tryLoadLeaflet, 500);
 });
 
 
