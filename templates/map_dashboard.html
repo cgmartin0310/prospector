@@ -119,211 +119,32 @@
     </div>
     
     <div class="map-content">
-        <svg id="us-map" viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
-            <!-- Alaska -->
-            <path class="state" id="AK" d="M100,500 L120,500 L120,520 L100,520 Z" data-name="Alaska"/>
-            <text class="state-label" x="110" y="515">AK</text>
+        <div style="text-align: center; padding: 20px;">
+            <h2>US Organization Coverage Map</h2>
+            <p>This map shows organization coverage by state with color coding:</p>
+            <div style="display: flex; justify-content: center; gap: 20px; margin: 20px 0;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 20px; height: 15px; background: #e9ecef; border: 1px solid #ccc;"></div>
+                    <span>0 organizations</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 20px; height: 15px; background: #ffeb3b; border: 1px solid #ccc;"></div>
+                    <span>1-5 organizations</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 20px; height: 15px; background: #ff9800; border: 1px solid #ccc;"></div>
+                    <span>6-15 organizations</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 20px; height: 15px; background: #f44336; border: 1px solid #ccc;"></div>
+                    <span>16+ organizations</span>
+                </div>
+            </div>
             
-            <!-- Hawaii -->
-            <path class="state" id="HI" d="M150,500 L170,500 L170,520 L150,520 Z" data-name="Hawaii"/>
-            <text class="state-label" x="160" y="515">HI</text>
-            
-            <!-- Washington -->
-            <path class="state" id="WA" d="M50,100 L100,100 L100,150 L50,150 Z" data-name="Washington"/>
-            <text class="state-label" x="75" y="125">WA</text>
-            
-            <!-- Oregon -->
-            <path class="state" id="OR" d="M50,150 L100,150 L100,200 L50,200 Z" data-name="Oregon"/>
-            <text class="state-label" x="75" y="175">OR</text>
-            
-            <!-- California -->
-            <path class="state" id="CA" d="M50,200 L120,200 L120,300 L50,300 Z" data-name="California"/>
-            <text class="state-label" x="85" y="250">CA</text>
-            
-            <!-- Nevada -->
-            <path class="state" id="NV" d="M120,200 L150,200 L150,250 L120,250 Z" data-name="Nevada"/>
-            <text class="state-label" x="135" y="225">NV</text>
-            
-            <!-- Arizona -->
-            <path class="state" id="AZ" d="M120,250 L150,250 L150,300 L120,300 Z" data-name="Arizona"/>
-            <text class="state-label" x="135" y="275">AZ</text>
-            
-            <!-- Idaho -->
-            <path class="state" id="ID" d="M100,150 L130,150 L130,200 L100,200 Z" data-name="Idaho"/>
-            <text class="state-label" x="115" y="175">ID</text>
-            
-            <!-- Montana -->
-            <path class="state" id="MT" d="M130,100 L160,100 L160,150 L130,150 Z" data-name="Montana"/>
-            <text class="state-label" x="145" y="125">MT</text>
-            
-            <!-- Wyoming -->
-            <path class="state" id="WY" d="M130,150 L160,150 L160,200 L130,200 Z" data-name="Wyoming"/>
-            <text class="state-label" x="145" y="175">WY</text>
-            
-            <!-- Utah -->
-            <path class="state" id="UT" d="M150,200 L180,200 L180,250 L150,250 Z" data-name="Utah"/>
-            <text class="state-label" x="165" y="225">UT</text>
-            
-            <!-- Colorado -->
-            <path class="state" id="CO" d="M150,250 L180,250 L180,300 L150,300 Z" data-name="Colorado"/>
-            <text class="state-label" x="165" y="275">CO</text>
-            
-            <!-- New Mexico -->
-            <path class="state" id="NM" d="M150,300 L180,300 L180,350 L150,350 Z" data-name="New Mexico"/>
-            <text class="state-label" x="165" y="325">NM</text>
-            
-            <!-- Texas -->
-            <path class="state" id="TX" d="M180,300 L250,300 L250,400 L180,400 Z" data-name="Texas"/>
-            <text class="state-label" x="215" y="350">TX</text>
-            
-            <!-- Oklahoma -->
-            <path class="state" id="OK" d="M180,350 L210,350 L210,400 L180,400 Z" data-name="Oklahoma"/>
-            <text class="state-label" x="195" y="375">OK</text>
-            
-            <!-- Kansas -->
-            <path class="state" id="KS" d="M180,400 L210,400 L210,450 L180,450 Z" data-name="Kansas"/>
-            <text class="state-label" x="195" y="425">KS</text>
-            
-            <!-- Nebraska -->
-            <path class="state" id="NE" d="M160,400 L190,400 L190,450 L160,450 Z" data-name="Nebraska"/>
-            <text class="state-label" x="175" y="425">NE</text>
-            
-            <!-- South Dakota -->
-            <path class="state" id="SD" d="M160,350 L190,350 L190,400 L160,400 Z" data-name="South Dakota"/>
-            <text class="state-label" x="175" y="375">SD</text>
-            
-            <!-- North Dakota -->
-            <path class="state" id="ND" d="M160,300 L190,300 L190,350 L160,350 Z" data-name="North Dakota"/>
-            <text class="state-label" x="175" y="325">ND</text>
-            
-            <!-- Minnesota -->
-            <path class="state" id="MN" d="M190,300 L220,300 L220,350 L190,350 Z" data-name="Minnesota"/>
-            <text class="state-label" x="205" y="325">MN</text>
-            
-            <!-- Wisconsin -->
-            <path class="state" id="WI" d="M220,300 L250,300 L250,350 L220,350 Z" data-name="Wisconsin"/>
-            <text class="state-label" x="235" y="325">WI</text>
-            
-            <!-- Michigan -->
-            <path class="state" id="MI" d="M250,300 L280,300 L280,350 L250,350 Z" data-name="Michigan"/>
-            <text class="state-label" x="265" y="325">MI</text>
-            
-            <!-- Illinois -->
-            <path class="state" id="IL" d="M220,350 L250,350 L250,400 L220,400 Z" data-name="Illinois"/>
-            <text class="state-label" x="235" y="375">IL</text>
-            
-            <!-- Indiana -->
-            <path class="state" id="IN" d="M250,350 L280,350 L280,400 L250,400 Z" data-name="Indiana"/>
-            <text class="state-label" x="265" y="375">IN</text>
-            
-            <!-- Ohio -->
-            <path class="state" id="OH" d="M280,350 L310,350 L310,400 L280,400 Z" data-name="Ohio"/>
-            <text class="state-label" x="295" y="375">OH</text>
-            
-            <!-- Pennsylvania -->
-            <path class="state" id="PA" d="M310,350 L340,350 L340,400 L310,400 Z" data-name="Pennsylvania"/>
-            <text class="state-label" x="325" y="375">PA</text>
-            
-            <!-- New York -->
-            <path class="state" id="NY" d="M340,350 L370,350 L370,400 L340,400 Z" data-name="New York"/>
-            <text class="state-label" x="355" y="375">NY</text>
-            
-            <!-- New Jersey -->
-            <path class="state" id="NJ" d="M370,350 L400,350 L400,400 L370,400 Z" data-name="New Jersey"/>
-            <text class="state-label" x="385" y="375">NJ</text>
-            
-            <!-- Connecticut -->
-            <path class="state" id="CT" d="M400,350 L430,350 L430,400 L400,400 Z" data-name="Connecticut"/>
-            <text class="state-label" x="415" y="375">CT</text>
-            
-            <!-- Rhode Island -->
-            <path class="state" id="RI" d="M430,350 L460,350 L460,400 L430,400 Z" data-name="Rhode Island"/>
-            <text class="state-label" x="445" y="375">RI</text>
-            
-            <!-- Massachusetts -->
-            <path class="state" id="MA" d="M460,350 L490,350 L490,400 L460,400 Z" data-name="Massachusetts"/>
-            <text class="state-label" x="475" y="375">MA</text>
-            
-            <!-- Vermont -->
-            <path class="state" id="VT" d="M370,300 L400,300 L400,350 L370,350 Z" data-name="Vermont"/>
-            <text class="state-label" x="385" y="325">VT</text>
-            
-            <!-- New Hampshire -->
-            <path class="state" id="NH" d="M400,300 L430,300 L430,350 L400,350 Z" data-name="New Hampshire"/>
-            <text class="state-label" x="415" y="325">NH</text>
-            
-            <!-- Maine -->
-            <path class="state" id="ME" d="M430,300 L460,300 L460,350 L430,350 Z" data-name="Maine"/>
-            <text class="state-label" x="445" y="325">ME</text>
-            
-            <!-- Missouri -->
-            <path class="state" id="MO" d="M210,400 L240,400 L240,450 L210,450 Z" data-name="Missouri"/>
-            <text class="state-label" x="225" y="425">MO</text>
-            
-            <!-- Iowa -->
-            <path class="state" id="IA" d="M190,400 L220,400 L220,450 L190,450 Z" data-name="Iowa"/>
-            <text class="state-label" x="205" y="425">IA</text>
-            
-            <!-- Arkansas -->
-            <path class="state" id="AR" d="M210,450 L240,450 L240,500 L210,500 Z" data-name="Arkansas"/>
-            <text class="state-label" x="225" y="475">AR</text>
-            
-            <!-- Louisiana -->
-            <path class="state" id="LA" d="M240,450 L270,450 L270,500 L240,500 Z" data-name="Louisiana"/>
-            <text class="state-label" x="255" y="475">LA</text>
-            
-            <!-- Mississippi -->
-            <path class="state" id="MS" d="M270,450 L300,450 L300,500 L270,500 Z" data-name="Mississippi"/>
-            <text class="state-label" x="285" y="475">MS</text>
-            
-            <!-- Alabama -->
-            <path class="state" id="AL" d="M300,450 L330,450 L330,500 L300,500 Z" data-name="Alabama"/>
-            <text class="state-label" x="315" y="475">AL</text>
-            
-            <!-- Georgia -->
-            <path class="state" id="GA" d="M330,450 L360,450 L360,500 L330,500 Z" data-name="Georgia"/>
-            <text class="state-label" x="345" y="475">GA</text>
-            
-            <!-- Florida -->
-            <path class="state" id="FL" d="M360,450 L420,450 L420,550 L360,550 Z" data-name="Florida"/>
-            <text class="state-label" x="390" y="500">FL</text>
-            
-            <!-- South Carolina -->
-            <path class="state" id="SC" d="M360,500 L390,500 L390,550 L360,550 Z" data-name="South Carolina"/>
-            <text class="state-label" x="375" y="525">SC</text>
-            
-            <!-- North Carolina -->
-            <path class="state" id="NC" d="M390,500 L420,500 L420,550 L390,550 Z" data-name="North Carolina"/>
-            <text class="state-label" x="405" y="525">NC</text>
-            
-            <!-- Virginia -->
-            <path class="state" id="VA" d="M420,500 L450,500 L450,550 L420,550 Z" data-name="Virginia"/>
-            <text class="state-label" x="435" y="525">VA</text>
-            
-            <!-- West Virginia -->
-            <path class="state" id="WV" d="M450,500 L480,500 L480,550 L450,550 Z" data-name="West Virginia"/>
-            <text class="state-label" x="465" y="525">WV</text>
-            
-            <!-- Kentucky -->
-            <path class="state" id="KY" d="M480,500 L510,500 L510,550 L480,550 Z" data-name="Kentucky"/>
-            <text class="state-label" x="495" y="525">KY</text>
-            
-            <!-- Tennessee -->
-            <path class="state" id="TN" d="M510,500 L540,500 L540,550 L510,550 Z" data-name="Tennessee"/>
-            <text class="state-label" x="525" y="525">TN</text>
-            
-            <!-- Maryland -->
-            <path class="state" id="MD" d="M540,500 L570,500 L570,550 L540,550 Z" data-name="Maryland"/>
-            <text class="state-label" x="555" y="525">MD</text>
-            
-            <!-- Delaware -->
-            <path class="state" id="DE" d="M570,500 L600,500 L600,550 L570,550 Z" data-name="Delaware"/>
-            <text class="state-label" x="585" y="525">DE</text>
-            
-            <!-- Washington DC -->
-            <path class="state" id="DC" d="M600,500 L610,500 L610,510 L600,510 Z" data-name="District of Columbia"/>
-            <text class="state-label" x="605" y="505">DC</text>
-        </svg>
+            <div id="state-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; max-width: 800px; margin: 0 auto;">
+                <!-- States will be populated by JavaScript -->
+            </div>
+        </div>
     </div>
     
     <div class="legend">
@@ -388,13 +209,48 @@ function loadStateData() {
 function updateMapColors() {
     console.log('Updating map colors...');
     
+    const stateGrid = document.getElementById('state-grid');
+    stateGrid.innerHTML = '';
+    
+    // Create state cards
     stateData.forEach(state => {
-        const stateElement = document.getElementById(state.state_code);
-        if (stateElement) {
-            const count = state.team_count || 0;
-            const color = getColorByCount(count);
-            stateElement.style.fill = color;
-        }
+        const count = state.team_count || 0;
+        const color = getColorByCount(count);
+        
+        const stateCard = document.createElement('div');
+        stateCard.className = 'state-card';
+        stateCard.style.cssText = `
+            background: ${color};
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            font-weight: bold;
+            color: #333;
+        `;
+        
+        stateCard.innerHTML = `
+            <div style="font-size: 18px; margin-bottom: 5px;">${state.state_code}</div>
+            <div style="font-size: 14px; margin-bottom: 5px;">${state.state_name}</div>
+            <div style="font-size: 16px; font-weight: bold;">${count} organizations</div>
+        `;
+        
+        stateCard.addEventListener('click', function() {
+            console.log('Clicked state:', state.state_code);
+            // You can add navigation or modal here
+        });
+        
+        stateCard.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.05)';
+        });
+        
+        stateCard.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+        
+        stateGrid.appendChild(stateCard);
     });
 }
 
@@ -406,34 +262,8 @@ function getColorByCount(count) {
 }
 
 function setupStateInteractions() {
-    const states = document.querySelectorAll('.state');
-    const tooltip = document.getElementById('tooltip');
-    
-    states.forEach(state => {
-        state.addEventListener('mouseenter', function(e) {
-            const stateCode = this.id;
-            const stateName = this.getAttribute('data-name');
-            const count = stateData.find(s => s.state_code === stateCode)?.team_count || 0;
-            
-            tooltip.innerHTML = `
-                <strong>${stateName} (${stateCode})</strong><br>
-                Organizations: ${count}
-            `;
-            tooltip.style.display = 'block';
-            tooltip.style.left = e.pageX + 10 + 'px';
-            tooltip.style.top = e.pageY - 10 + 'px';
-        });
-        
-        state.addEventListener('mouseleave', function() {
-            tooltip.style.display = 'none';
-        });
-        
-        state.addEventListener('click', function() {
-            const stateCode = this.id;
-            console.log('Clicked state:', stateCode);
-            // You can add navigation or modal here
-        });
-    });
+    // State interactions are now handled in updateMapColors()
+    console.log('State interactions will be set up when data loads');
 }
 </script>
 {% endblock %}
