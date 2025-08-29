@@ -6,467 +6,88 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
-    #map-container {
-        position: relative;
-        height: 70vh;
-        width: 100%;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        background: #e9ecef;
-        min-height: 500px;
-        border: 3px solid #007bff;
-        margin-top: 20px;
-    }
-    
-    #us-map {
+    /* Simple map styles */
+    body, html {
+        margin: 0;
+        padding: 0;
         height: 100%;
-        width: 100%;
-    }
-    
-    #state-details-panel {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        width: 350px;
-        max-height: calc(100% - 40px);
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        overflow-y: auto;
-        z-index: 1000;
-        display: none;
-    }
-    
-    .panel-header {
-        background: #2c3e50;
-        color: white;
-        padding: 15px;
-        border-radius: 8px 8px 0 0;
-    }
-    
-    .panel-content {
-        padding: 20px;
-    }
-    
-    .stats-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-        margin-bottom: 20px;
-    }
-    
-    .stat-card {
-        background: #f8f9fa;
-        padding: 15px;
-        border-radius: 6px;
-        text-align: center;
-    }
-    
-    .stat-number {
-        font-size: 24px;
-        font-weight: bold;
-        color: #2c3e50;
-    }
-    
-    .stat-label {
-        font-size: 12px;
-        color: #6c757d;
-        text-transform: uppercase;
-    }
-    
-    .team-list {
-        max-height: 300px;
-        overflow-y: auto;
-    }
-    
-    .team-item {
-        border-bottom: 1px solid #eee;
-        padding: 10px 0;
-    }
-    
-    .team-item:last-child {
-        border-bottom: none;
-    }
-    
-    .team-name {
-        font-weight: bold;
-        color: #2c3e50;
-        margin-bottom: 5px;
-    }
-    
-    .team-county {
-        font-size: 12px;
-        color: #6c757d;
-    }
-    
-    .team-contact {
-        font-size: 12px;
-        color: #28a745;
-        margin-top: 5px;
-    }
-    
-    .search-form {
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid #eee;
-    }
-    
-    .search-input {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-bottom: 10px;
-    }
-    
-    .btn-start-search {
-        width: 100%;
-        background: #28a745;
-        color: white;
-        border: none;
-        padding: 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-    }
-    
-    .btn-start-search:hover {
-        background: #218838;
-    }
-    
-    .btn-start-search:disabled {
-        background: #6c757d;
-        cursor: not-allowed;
-    }
-    
-    .legend {
-        position: absolute;
-        bottom: 20px;
-        left: 20px;
-        background: white;
-        padding: 15px;
-        border-radius: 6px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        z-index: 1000;
-    }
-    
-    .legend-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 8px;
-    }
-    
-    .legend-color {
-        width: 20px;
-        height: 20px;
-        border-radius: 3px;
-        margin-right: 10px;
-        border: 1px solid #ccc;
-    }
-    
-    .loading {
-        text-align: center;
-        padding: 20px;
-        color: #6c757d;
-    }
-    
-    .error {
-        color: #dc3545;
-        padding: 10px;
-        background: #f8d7da;
-        border-radius: 4px;
-        margin: 10px 0;
-    }
-    
-    .debug-info {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        background: rgba(255, 255, 255, 0.9);
-        padding: 10px;
-        border-radius: 4px;
-        font-size: 12px;
-        z-index: 1000;
-        max-width: 300px;
-        word-wrap: break-word;
-    }
-    
-    .fallback-message {
-        text-align: center;
-        padding: 50px 20px;
-        color: #6c757d;
-        font-size: 18px;
-    }
-    
-    .fallback-message h3 {
-        color: #dc3545;
-        margin-bottom: 20px;
-    }
-    
-    .fallback-message .btn {
-        margin-top: 20px;
-    }
-    
-    .simple-test {
-        background: #e9ecef;
-        padding: 20px;
-        margin: 20px 0;
-        border-radius: 8px;
-        text-align: center;
-    }
-    
-    .test-button {
-        background: #007bff;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        margin: 10px;
-    }
-    
-    .test-result {
-        margin-top: 10px;
-        padding: 10px;
-        border-radius: 4px;
-        font-weight: bold;
-    }
-    
-    .test-success {
-        background: #d4edda;
-        color: #155724;
-    }
-    
-    .test-error {
-        background: #f8d7da;
-        color: #721c24;
+        overflow: hidden;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1>US Overdose Response Team Coverage Map</h1>
-                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
-                </a>
-            </div>
-            
-            <!-- Simple JavaScript Test -->
-            <div class="simple-test" style="padding: 10px; margin: 10px 0;">
-                <h6 style="margin: 0 0 10px 0;">Debug Tests:</h6>
-                <button class="test-button" id="test-js-btn" style="padding: 5px 10px; font-size: 12px;">JS</button>
-                <button class="test-button" id="test-fetch-btn" style="padding: 5px 10px; font-size: 12px;">API</button>
-                <button class="test-button" id="test-leaflet-btn" style="padding: 5px 10px; font-size: 12px;">Leaflet</button>
-                <button class="test-button" id="test-map-route-btn" style="padding: 5px 10px; font-size: 12px;">Route</button>
-                <div id="test-results" style="margin-top: 5px; font-size: 11px;"></div>
-            </div>
-            
-            <div id="map-container">
-                <div style="position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.95); padding: 8px; border-radius: 4px; font-size: 14px; z-index: 1001; border: 2px solid #007bff; font-weight: bold;">
-                    🗺️ MAP CONTAINER ACTIVE
-                </div>
-                <div id="us-map" style="height: 100%; width: 100%; background: #f0f0f0;"></div>
-                
-                <div class="debug-info" id="debug-info">
-                    Loading map...
-                </div>
-                
-                <div id="fallback-message" class="fallback-message" style="display: none;">
-                    <h3>Map Loading Issue</h3>
-                    <p>There was a problem loading the interactive map. This could be due to:</p>
-                    <ul style="text-align: left; display: inline-block;">
-                        <li>Network connectivity issues</li>
-                        <li>JavaScript being disabled</li>
-                        <li>Browser compatibility issues</li>
-                    </ul>
-                    <br>
-                    <a href="{{ url_for('view_results') }}" class="btn btn-primary">View Results Table Instead</a>
-                </div>
-                
-                <!-- Simple map placeholder -->
-                <div id="map-placeholder" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #666; font-size: 18px; z-index: 999;">
-                    <div style="font-size: 48px; margin-bottom: 10px;">🗺️</div>
-                    <div>Loading US Map...</div>
-                    <div style="font-size: 12px; margin-top: 10px;">If you don't see the map, check the console for errors</div>
-                </div>
-                
-                <div id="state-details-panel">
-                    <div class="panel-header">
-                        <h4 id="state-name">Select a State</h4>
-                    </div>
-                    <div class="panel-content">
-                        <div id="state-content">
-                            <div class="loading">Click on a state to view details</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="legend">
-                    <h6>US Map with Organization Counts</h6>
-                    <p style="margin: 0; font-size: 12px; color: #666;">
-                        Click on any state marker to see details and start a search
-                    </p>
-                </div>
-            </div>
-        </div>
+<div id="map-container" style="height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; z-index: 9999; background: #e9ecef; border: 5px solid #007bff;">
+    <div style="position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 10px; border-radius: 4px; font-size: 16px; z-index: 1001; border: 2px solid #007bff; font-weight: bold;">
+        🗺️ MAP TEST - FULL SCREEN
+    </div>
+    <div id="us-map" style="height: 100%; width: 100%;"></div>
+    
+    <div style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.95); padding: 10px; border-radius: 4px; font-size: 14px; z-index: 1001;">
+        <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-secondary">Back to Dashboard</a>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-console.log('Map dashboard script loaded!');
+console.log('Simple map test - loading...');
 
-// Simple test functions
-function testBasicJS() {
-    const results = document.getElementById('test-results');
-    try {
-        const testElement = document.createElement('div');
-        testElement.textContent = 'JavaScript is working!';
-        results.innerHTML = '<div class="test-result test-success">✅ Basic JavaScript is working</div>';
-    } catch (error) {
-        results.innerHTML = '<div class="test-result test-error">❌ Basic JavaScript failed: ' + error.message + '</div>';
-    }
-}
-
-function testFetch() {
-    const results = document.getElementById('test-results');
-    results.innerHTML = '<div class="test-result">🔄 Testing API fetch...</div>';
-    
-    // Test the map states API endpoint
-    fetch('/api/map/states')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                results.innerHTML = '<div class="test-result test-success">✅ API fetch working! Got ' + (data.data ? data.data.length : 0) + ' states</div>';
-            } else {
-                results.innerHTML = '<div class="test-result test-error">❌ API returned error: ' + (data.error || 'Unknown error') + '</div>';
-            }
-        })
-        .catch(error => {
-            results.innerHTML = '<div class="test-result test-error">❌ API fetch failed: ' + error.message + '</div>';
-        });
-}
-
-function testLeaflet() {
-    const results = document.getElementById('test-results');
-    if (typeof L === 'undefined') {
-        results.innerHTML = '<div class="test-result test-error">❌ Leaflet library not loaded</div>';
-    } else {
-        results.innerHTML = '<div class="test-result test-success">✅ Leaflet library is available</div>';
-    }
-}
-
-function testMapRoute() {
-    const results = document.getElementById('test-results');
-    results.innerHTML = '<div class="test-result">🔄 Testing map route...</div>';
-    
-    // Test if we can access the map route
-    fetch('/map')
-        .then(response => {
-            if (response.ok) {
-                results.innerHTML = '<div class="test-result test-success">✅ Map route is accessible</div>';
-            } else {
-                results.innerHTML = '<div class="test-result test-error">❌ Map route returned HTTP ' + response.status + '</div>';
-            }
-        })
-        .catch(error => {
-            results.innerHTML = '<div class="test-result test-error">❌ Map route test failed: ' + error.message + '</div>';
-        });
-}
-
-// Add event listeners when DOM is loaded
+// Simple map initialization
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, setting up test buttons...');
-    console.log('Test buttons should be working now!');
+    console.log('DOM loaded, initializing simple map...');
     
-    // Set up test button event listeners
-    const testJSBtn = document.getElementById('test-js-btn');
-    const testFetchBtn = document.getElementById('test-fetch-btn');
-    const testLeafletBtn = document.getElementById('test-leaflet-btn');
-    const testMapRouteBtn = document.getElementById('test-map-route-btn');
-    
-    if (testJSBtn) {
-        testJSBtn.addEventListener('click', testBasicJS);
-        console.log('Test JS button listener added');
-    }
-    
-    if (testFetchBtn) {
-        testFetchBtn.addEventListener('click', testFetch);
-        console.log('Test Fetch button listener added');
-    }
-    
-    if (testLeafletBtn) {
-        testLeafletBtn.addEventListener('click', testLeaflet);
-        console.log('Test Leaflet button listener added');
-    }
-    
-    if (testMapRouteBtn) {
-        testMapRouteBtn.addEventListener('click', testMapRoute);
-        console.log('Test Map Route button listener added');
-    }
-    
-    // Wait a moment for Leaflet to be fully loaded, then initialize map
-    updateDebugInfo('DOM loaded, waiting for Leaflet...');
-    
-    // Try multiple times to load Leaflet
-    let leafletAttempts = 0;
-    const maxAttempts = 5;
-    
-    function tryLoadLeaflet() {
-        leafletAttempts++;
-        updateDebugInfo(`Checking for Leaflet (attempt ${leafletAttempts}/${maxAttempts})...`);
-        
+    // Wait for Leaflet to load
+    setTimeout(function() {
         if (typeof L !== 'undefined') {
-            updateDebugInfo('Leaflet available, initializing map...');
-            initializeMap();
-            loadStateData();
-        } else if (leafletAttempts < maxAttempts) {
-            updateDebugInfo(`Leaflet not ready, retrying in 500ms...`);
-            setTimeout(tryLoadLeaflet, 500);
+            console.log('Leaflet available, creating map...');
+            createSimpleMap();
         } else {
-            updateDebugInfo('ERROR: Leaflet failed to load after multiple attempts');
-            // Try loading Leaflet manually
+            console.log('Loading Leaflet manually...');
             loadLeafletManually();
         }
-    }
+    }, 1000);
     
     function loadLeafletManually() {
-        updateDebugInfo('Attempting to load Leaflet manually...');
-        
-        // Add CSS first
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css';
-        document.head.appendChild(link);
-        
-        // Then add script
         const script = document.createElement('script');
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
         script.onload = function() {
-            updateDebugInfo('Leaflet loaded manually, initializing map...');
-            initializeMap();
-            loadStateData();
+            console.log('Leaflet loaded manually, creating map...');
+            createSimpleMap();
         };
         script.onerror = function() {
-            updateDebugInfo('ERROR: Failed to load Leaflet from CDN');
-            showFallbackMessage();
+            console.error('Failed to load Leaflet');
         };
         document.head.appendChild(script);
     }
     
-    setTimeout(tryLoadLeaflet, 500);
+    function createSimpleMap() {
+        try {
+            console.log('Creating simple map...');
+            
+            // Create the map
+            const map = L.map('us-map').setView([39.8283, -98.5795], 4);
+            console.log('Map created successfully');
+            
+            // Add tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            console.log('Tile layer added');
+            
+            // Add a simple marker to test
+            L.marker([39.8283, -98.5795]).addTo(map)
+                .bindPopup('Map is working! This is the center of the US.')
+                .openPopup();
+            console.log('Test marker added');
+            
+        } catch (error) {
+            console.error('Error creating map:', error);
+        }
+    }
 });
+</script>
+{% endblock %}
 
 
 
