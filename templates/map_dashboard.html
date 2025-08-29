@@ -606,24 +606,30 @@ function loadStateData() {
 }
 
 function updateMapColors(stateData) {
+    // Convert stateData array to object for easier lookup
+    const stateDataObj = {};
     stateData.forEach(state => {
-        const layer = stateLayers[state.state_code];
-        if (layer) {
-            const color = getColorByTeamCount(state.team_count);
-            layer.setStyle({
-                fillColor: color
-            });
+        stateDataObj[state.state_code] = state;
+    });
+    
+    // Update markers with new data
+    Object.keys(stateLayers).forEach(stateCode => {
+        const marker = stateLayers[stateCode];
+        const stateInfo = stateDataObj[stateCode];
+        
+        if (marker && stateInfo) {
+            const count = stateInfo.team_count || 0;
+            
+            // Update popup with new count
+            marker.bindPopup(`
+                <strong>${stateCode}</strong><br>
+                Organizations found: <strong>${count}</strong>
+            `);
         }
     });
 }
 
-function getColorByTeamCount(count) {
-    if (count === 0) return '#ff4444';      // Red - no teams
-    if (count <= 2) return '#ffaa00';       // Orange - low coverage
-    if (count <= 5) return '#ffff00';       // Yellow - moderate
-    if (count <= 10) return '#00ff00';      // Green - good coverage
-    return '#008800';                       // Dark green - excellent
-}
+
 
 function onStateClick(stateCode) {
     updateDebugInfo(`Clicked state: ${stateCode}`);
