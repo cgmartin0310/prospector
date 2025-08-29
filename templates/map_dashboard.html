@@ -533,6 +533,11 @@ function initializeMap() {
         // Create simple state rectangles
         createSimpleStateLayers();
         
+        // Add a test marker to make sure the map is working
+        L.marker([39.8283, -98.5795]).addTo(map)
+            .bindPopup('Map is working! This is the center of the US.')
+            .openPopup();
+        
     } catch (error) {
         updateDebugInfo('ERROR initializing map: ' + error.message);
         console.error('Map initialization error:', error);
@@ -602,18 +607,18 @@ function createSimpleStateLayers() {
         states.forEach(state => {
             try {
                 const rect = L.rectangle(state.bounds, {
-                    color: 'white',
-                    weight: 2,
-                    fillColor: '#cccccc',
-                    fillOpacity: 0.7
+                    color: '#2c3e50',
+                    weight: 3,
+                    fillColor: '#3498db',
+                    fillOpacity: 0.8
                 }).addTo(map);
                 
                 // Add state label
                 const center = rect.getBounds().getCenter();
                 const label = L.divIcon({
                     className: 'state-label',
-                    html: `<div style="background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 3px; font-size: 10px; font-weight: bold;">${state.code}</div>`,
-                    iconSize: [30, 20]
+                    html: `<div style="background: rgba(255,255,255,0.95); padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; color: #2c3e50; border: 1px solid #2c3e50;">${state.code}</div>`,
+                    iconSize: [35, 25]
                 });
                 L.marker(center, {icon: label}).addTo(map);
                 
