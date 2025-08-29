@@ -323,8 +323,10 @@
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
+{% block scripts %}
 <script>
+console.log('Map dashboard script loaded!');
+
 // Simple test functions
 function testBasicJS() {
     const results = document.getElementById('test-results');
@@ -391,6 +393,7 @@ function testMapRoute() {
 // Add event listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, setting up test buttons...');
+    console.log('Test buttons should be working now!');
     
     // Set up test button event listeners
     const testJSBtn = document.getElementById('test-js-btn');
