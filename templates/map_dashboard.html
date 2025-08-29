@@ -421,10 +421,18 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Test Map Route button listener added');
     }
     
-    // Initialize map immediately since Leaflet is loaded in head
-    updateDebugInfo('DOM loaded, initializing map...');
-    initializeMap();
-    loadStateData();
+    // Wait a moment for Leaflet to be fully loaded, then initialize map
+    updateDebugInfo('DOM loaded, waiting for Leaflet...');
+    setTimeout(function() {
+        if (typeof L !== 'undefined') {
+            updateDebugInfo('Leaflet available, initializing map...');
+            initializeMap();
+            loadStateData();
+        } else {
+            updateDebugInfo('ERROR: Leaflet still not available after delay');
+            showFallbackMessage();
+        }
+    }, 1000);
 });
 
 

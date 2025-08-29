@@ -481,14 +481,14 @@ def api_map_states():
     try:
         from sqlalchemy import func, distinct
         
-        # Get state coverage statistics
+        # Get state coverage statistics with explicit joins
         state_stats = db.session.query(
             State.abbreviation,
             State.name,
             func.count(SearchResult.id).label('team_count'),
             func.count(distinct(SearchResult.county_id)).label('counties_with_teams'),
             func.count(distinct(County.id)).label('total_counties')
-        ).outerjoin(County).outerjoin(SearchResult, County.id == SearchResult.county_id).group_by(State.id, State.abbreviation, State.name).all()
+        ).select_from(State).outerjoin(County, State.id == County.state_id).outerjoin(SearchResult, County.id == SearchResult.county_id).group_by(State.id, State.abbreviation, State.name).all()
         
         # Format data for frontend
         map_data = []
