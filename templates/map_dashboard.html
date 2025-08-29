@@ -5,6 +5,13 @@
 {% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+// Fix Leaflet icon paths
+(function() {
+    // Override the default icon path to use CDN
+    L.Icon.Default.imagePath = 'https://unpkg.com/leaflet@1.9.4/dist/images/';
+})();
+</script>
 <style>
     /* Simple map styles */
     body, html {
@@ -12,6 +19,15 @@
         padding: 0;
         height: 100%;
         overflow: hidden;
+    }
+    
+    /* Custom marker styles */
+    .custom-marker {
+        background: none;
+        border: none;
+        font-size: 30px;
+        text-align: center;
+        line-height: 30px;
     }
 </style>
 {% endblock %}
@@ -75,8 +91,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }).addTo(map);
             console.log('Tile layer added');
             
-            // Add a simple marker to test
-            L.marker([39.8283, -98.5795]).addTo(map)
+            // Add a simple marker to test with custom icon
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '📍',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30]
+            });
+            
+            L.marker([39.8283, -98.5795], {icon: customIcon}).addTo(map)
                 .bindPopup('Map is working! This is the center of the US.')
                 .openPopup();
             console.log('Test marker added');
