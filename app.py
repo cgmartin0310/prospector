@@ -419,7 +419,6 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_ENV') != 'production'
     app.run(host='0.0.0.0', port=port, debug=debug)
-# Add this to your app.py file
 
 @app.route('/admin/populate-counties')
 def populate_all_counties():
@@ -582,10 +581,18 @@ def api_map_start_search(state_abbr):
         db.session.add(job)
         db.session.commit()
         
-        # Start the job in background
+        # Start the prospecting process in background with app context
         from services.prospector import ProspectorService
-        prospector = ProspectorService()
-        prospector.start_job(job.id)
+        
+        def run_job_with_context(job_id):
+            """Run job with Flask app context"""
+            with app.app_context():
+                prospector = ProspectorService()
+                prospector.run_job(job_id)
+        
+        thread = threading.Thread(target=run_job_with_context, args=(job.id,))
+        thread.daemon = True
+        thread.start()
         
         return jsonify({
             "success": True,

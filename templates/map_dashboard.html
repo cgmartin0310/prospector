@@ -4,6 +4,7 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
     #map-container {
         position: relative;
@@ -259,6 +260,7 @@
                 <button class="test-button" id="test-js-btn">Test Basic JavaScript</button>
                 <button class="test-button" id="test-fetch-btn">Test API Fetch</button>
                 <button class="test-button" id="test-leaflet-btn">Test Leaflet Library</button>
+                <button class="test-button" id="test-map-route-btn">Test Map Route</button>
                 <div id="test-results"></div>
             </div>
             
@@ -339,10 +341,20 @@ function testFetch() {
     const results = document.getElementById('test-results');
     results.innerHTML = '<div class="test-result">🔄 Testing API fetch...</div>';
     
+    // Test the map states API endpoint
     fetch('/api/map/states')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            results.innerHTML = '<div class="test-result test-success">✅ API fetch working! Got ' + (data.data ? data.data.length : 0) + ' states</div>';
+            if (data.success) {
+                results.innerHTML = '<div class="test-result test-success">✅ API fetch working! Got ' + (data.data ? data.data.length : 0) + ' states</div>';
+            } else {
+                results.innerHTML = '<div class="test-result test-error">❌ API returned error: ' + (data.error || 'Unknown error') + '</div>';
+            }
         })
         .catch(error => {
             results.innerHTML = '<div class="test-result test-error">❌ API fetch failed: ' + error.message + '</div>';
@@ -358,6 +370,24 @@ function testLeaflet() {
     }
 }
 
+function testMapRoute() {
+    const results = document.getElementById('test-results');
+    results.innerHTML = '<div class="test-result">🔄 Testing map route...</div>';
+    
+    // Test if we can access the map route
+    fetch('/map')
+        .then(response => {
+            if (response.ok) {
+                results.innerHTML = '<div class="test-result test-success">✅ Map route is accessible</div>';
+            } else {
+                results.innerHTML = '<div class="test-result test-error">❌ Map route returned HTTP ' + response.status + '</div>';
+            }
+        })
+        .catch(error => {
+            results.innerHTML = '<div class="test-result test-error">❌ Map route test failed: ' + error.message + '</div>';
+        });
+}
+
 // Add event listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, setting up test buttons...');
@@ -366,6 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const testJSBtn = document.getElementById('test-js-btn');
     const testFetchBtn = document.getElementById('test-fetch-btn');
     const testLeafletBtn = document.getElementById('test-leaflet-btn');
+    const testMapRouteBtn = document.getElementById('test-map-route-btn');
     
     if (testJSBtn) {
         testJSBtn.addEventListener('click', testBasicJS);
@@ -382,47 +413,23 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Test Leaflet button listener added');
     }
     
-    // Continue with map initialization
-    updateDebugInfo('DOM loaded, checking Leaflet availability...');
+    if (testMapRouteBtn) {
+        testMapRouteBtn.addEventListener('click', testMapRoute);
+        console.log('Test Map Route button listener added');
+    }
     
-    // Wait a bit for any existing scripts to load
-    setTimeout(function() {
-        if (checkLeaflet()) {
-            initializeMap();
-            loadStateData();
-        }
-    }, 500);
+    // Initialize map immediately since Leaflet is loaded in head
+    updateDebugInfo('DOM loaded, initializing map...');
+    initializeMap();
+    loadStateData();
 });
 
-// Check if Leaflet is available
-function checkLeaflet() {
-    if (typeof L === 'undefined') {
-        updateDebugInfo('ERROR: Leaflet library not loaded. Trying to load it...');
-        loadLeafletScript();
-        return false;
-    }
-    return true;
-}
 
-function loadLeafletScript() {
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.onload = function() {
-        updateDebugInfo('Leaflet loaded successfully, retrying map initialization...');
-        setTimeout(initializeMap, 1000);
-    };
-    script.onerror = function() {
-        updateDebugInfo('ERROR: Failed to load Leaflet from CDN');
-        showFallbackMessage();
-    };
-    document.head.appendChild(script);
-}
 
 let map;
 let stateLayers = {};
 let selectedState = null;
 let stateData = {};
-let initializationAttempts = 0;
 
 
 
@@ -446,20 +453,13 @@ function showFallbackMessage() {
 }
 
 function initializeMap() {
-    initializationAttempts++;
-    updateDebugInfo(`Initializing map (attempt ${initializationAttempts})...`);
-    
-    if (initializationAttempts > 3) {
-        updateDebugInfo('ERROR: Too many initialization attempts. Showing fallback.');
-        showFallbackMessage();
-        return;
-    }
+    updateDebugInfo('Initializing map...');
     
     try {
         // Check if Leaflet is available
         if (typeof L === 'undefined') {
-            updateDebugInfo('ERROR: Leaflet not available. Retrying...');
-            setTimeout(initializeMap, 1000);
+            updateDebugInfo('ERROR: Leaflet library not loaded');
+            showFallbackMessage();
             return;
         }
         
@@ -481,13 +481,7 @@ function initializeMap() {
     } catch (error) {
         updateDebugInfo('ERROR initializing map: ' + error.message);
         console.error('Map initialization error:', error);
-        
-        if (initializationAttempts < 3) {
-            updateDebugInfo('Retrying in 2 seconds...');
-            setTimeout(initializeMap, 2000);
-        } else {
-            showFallbackMessage();
-        }
+        showFallbackMessage();
     }
 }
 
