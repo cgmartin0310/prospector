@@ -14,6 +14,9 @@
         overflow: hidden;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         background: #f8f9fa;
+        min-height: 600px;
+        border: 3px solid #007bff;
+        background: #e9ecef;
     }
     
     #us-map {
@@ -265,6 +268,9 @@
             </div>
             
             <div id="map-container">
+                <div style="position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 5px; border-radius: 3px; font-size: 12px; z-index: 1001;">
+                    Map Container Active
+                </div>
                 <div id="us-map"></div>
                 
                 <div class="debug-info" id="debug-info">
