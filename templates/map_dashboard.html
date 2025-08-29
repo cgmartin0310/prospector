@@ -301,27 +301,10 @@
                 </div>
                 
                 <div class="legend">
-                    <h6>Coverage Legend</h6>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #ff4444;"></div>
-                        <span>No teams found</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #ffaa00;"></div>
-                        <span>1-2 teams</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #ffff00;"></div>
-                        <span>3-5 teams</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #00ff00;"></div>
-                        <span>6-10 teams</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #008800;"></div>
-                        <span>10+ teams</span>
-                    </div>
+                    <h6>US Map with Organization Counts</h6>
+                    <p style="margin: 0; font-size: 12px; color: #666;">
+                        Click on any state marker to see details and start a search
+                    </p>
                 </div>
             </div>
         </div>
@@ -530,13 +513,8 @@ function initializeMap() {
         }).addTo(map);
         updateDebugInfo('Tile layer added');
         
-        // Create simple state rectangles
-        createSimpleStateLayers();
-        
-        // Add a test marker to make sure the map is working
-        L.marker([39.8283, -98.5795]).addTo(map)
-            .bindPopup('Map is working! This is the center of the US.')
-            .openPopup();
+        // Add state markers with organization counts
+        createStateMarkers();
         
     } catch (error) {
         updateDebugInfo('ERROR initializing map: ' + error.message);
@@ -545,116 +523,64 @@ function initializeMap() {
     }
 }
 
-function createSimpleStateLayers() {
-    updateDebugInfo('Creating state layers...');
+function createStateMarkers() {
+    updateDebugInfo('Creating state markers...');
     
     try {
-        // Define major states with their approximate bounds
-        const states = [
-            {code: 'CA', name: 'California', bounds: [[32.5, -124.5], [42, -114.5]]},
-            {code: 'TX', name: 'Texas', bounds: [[26, -106.5], [36.5, -93.5]]},
-            {code: 'FL', name: 'Florida', bounds: [[24.5, -87.5], [31, -80]]},
-            {code: 'NY', name: 'New York', bounds: [[40.5, -79.8], [45, -71.8]]},
-            {code: 'PA', name: 'Pennsylvania', bounds: [[39.5, -80.5], [42.5, -74.5]]},
-            {code: 'IL', name: 'Illinois', bounds: [[37, -91.5], [42.5, -87.5]]},
-            {code: 'OH', name: 'Ohio', bounds: [[38.5, -84.8], [42, -80.5]]},
-            {code: 'GA', name: 'Georgia', bounds: [[30.5, -85.6], [35, -80.8]]},
-            {code: 'NC', name: 'North Carolina', bounds: [[33.8, -84.3], [36.6, -75.5]]},
-            {code: 'MI', name: 'Michigan', bounds: [[41.7, -90.4], [48.2, -82.1]]},
-            {code: 'NJ', name: 'New Jersey', bounds: [[38.9, -75.6], [41.4, -73.9]]},
-            {code: 'VA', name: 'Virginia', bounds: [[36.5, -83.7], [39.5, -75.2]]},
-            {code: 'WA', name: 'Washington', bounds: [[45.5, -124.8], [49, -116.9]]},
-            {code: 'AZ', name: 'Arizona', bounds: [[31.3, -114.8], [37, -109]]},
-            {code: 'MA', name: 'Massachusetts', bounds: [[41.2, -73.5], [42.9, -69.9]]},
-            {code: 'TN', name: 'Tennessee', bounds: [[34.9, -90.3], [36.7, -81.6]]},
-            {code: 'IN', name: 'Indiana', bounds: [[37.8, -88.1], [41.8, -84.8]]},
-            {code: 'MO', name: 'Missouri', bounds: [[36, -95.8], [40.6, -89.1]]},
-            {code: 'MD', name: 'Maryland', bounds: [[37.9, -79.5], [39.7, -75.1]]},
-            {code: 'CO', name: 'Colorado', bounds: [[37, -109.1], [41, -102]]},
-            {code: 'MN', name: 'Minnesota', bounds: [[43.5, -97.2], [49.4, -89.5]]},
-            {code: 'WI', name: 'Wisconsin', bounds: [[42.5, -92.9], [47.1, -86.3]]},
-            {code: 'AL', name: 'Alabama', bounds: [[30.2, -88.5], [35, -84.9]]},
-            {code: 'SC', name: 'South Carolina', bounds: [[32, -83.4], [35.2, -78.5]]},
-            {code: 'LA', name: 'Louisiana', bounds: [[28.9, -94], [33, -88.8]]},
-            {code: 'KY', name: 'Kentucky', bounds: [[36.5, -89.6], [39.1, -81.9]]},
-            {code: 'OR', name: 'Oregon', bounds: [[42, -124.6], [46.3, -116.5]]},
-            {code: 'OK', name: 'Oklahoma', bounds: [[33.6, -103], [37, -94.4]]},
-            {code: 'CT', name: 'Connecticut', bounds: [[40.9, -73.7], [42.1, -71.8]]},
-            {code: 'IA', name: 'Iowa', bounds: [[40.4, -96.6], [43.5, -90.1]]},
-            {code: 'MS', name: 'Mississippi', bounds: [[30.2, -91.7], [34.9, -88.1]]},
-            {code: 'AR', name: 'Arkansas', bounds: [[33, -94.6], [36.5, -89.6]]},
-            {code: 'KS', name: 'Kansas', bounds: [[37, -102.1], [40, -94.6]]},
-            {code: 'UT', name: 'Utah', bounds: [[37, -114.1], [42, -109]]},
-            {code: 'NV', name: 'Nevada', bounds: [[35, -120], [42, -114]]},
-            {code: 'NM', name: 'New Mexico', bounds: [[31.3, -109.1], [37, -103]]},
-            {code: 'NE', name: 'Nebraska', bounds: [[40, -104.1], [43, -95.3]]},
-            {code: 'ID', name: 'Idaho', bounds: [[42, -117.2], [49, -111]]},
-            {code: 'WV', name: 'West Virginia', bounds: [[37.2, -82.6], [40.6, -77.7]]},
-            {code: 'NH', name: 'New Hampshire', bounds: [[42.7, -72.6], [45.3, -70.7]]},
-            {code: 'ME', name: 'Maine', bounds: [[43.1, -71.1], [47.5, -66.9]]},
-            {code: 'HI', name: 'Hawaii', bounds: [[18.9, -178.3], [28.4, -154.8]]},
-            {code: 'RI', name: 'Rhode Island', bounds: [[41.1, -71.9], [42, -71.1]]},
-            {code: 'MT', name: 'Montana', bounds: [[44.4, -116.1], [49, -104]]},
-            {code: 'DE', name: 'Delaware', bounds: [[38.5, -75.8], [39.8, -75]]},
-            {code: 'SD', name: 'South Dakota', bounds: [[42.5, -104.1], [46, -96.4]]},
-            {code: 'ND', name: 'North Dakota', bounds: [[45.9, -104.1], [49, -96.6]]},
-            {code: 'AK', name: 'Alaska', bounds: [[51.2, -180], [71.4, -130]]},
-            {code: 'VT', name: 'Vermont', bounds: [[42.7, -73.4], [45.1, -71.5]]},
-            {code: 'WY', name: 'Wyoming', bounds: [[41, -111.1], [45, -104.1]]}
-        ];
+        // Define state centers with approximate coordinates
+        const stateCenters = {
+            'CA': [36.7783, -119.4179], 'TX': [31.9686, -99.9018], 'FL': [27.6648, -81.5158],
+            'NY': [42.1657, -74.9481], 'PA': [40.5908, -77.2098], 'IL': [40.6331, -89.3985],
+            'OH': [40.4173, -82.9071], 'GA': [32.1656, -82.9001], 'NC': [35.7596, -79.0193],
+            'MI': [44.3148, -85.6024], 'NJ': [40.0583, -74.4057], 'VA': [37.7693, -78.1700],
+            'WA': [47.4009, -121.4905], 'AZ': [33.7298, -111.4312], 'MA': [42.2304, -71.5301],
+            'TN': [35.7478, -86.6923], 'IN': [39.8494, -86.2583], 'MO': [38.4561, -92.2884],
+            'MD': [39.0639, -76.8021], 'CO': [39.5501, -105.7821], 'MN': [46.7296, -94.6859],
+            'WI': [44.2685, -89.6165], 'AL': [32.8067, -86.7911], 'SC': [33.8569, -80.9450],
+            'LA': [31.1695, -91.8678], 'KY': [37.6681, -84.6701], 'OR': [44.5720, -122.0709],
+            'OK': [35.5653, -96.9289], 'CT': [41.6032, -73.0877], 'IA': [42.0329, -93.9008],
+            'MS': [32.7416, -89.6787], 'AR': [34.9697, -92.3731], 'KS': [38.5111, -96.8005],
+            'UT': [39.3210, -111.0937], 'NV': [38.8026, -116.4194], 'NM': [34.5199, -105.8701],
+            'NE': [41.4925, -99.9018], 'ID': [44.2405, -114.4788], 'WV': [38.5976, -80.4549],
+            'NH': [43.1939, -71.5724], 'ME': [44.6939, -69.3819], 'HI': [19.8968, -155.5828],
+            'RI': [41.6809, -71.5118], 'MT': [46.8797, -110.3626], 'DE': [38.9108, -75.5277],
+            'SD': [44.2998, -99.4388], 'ND': [47.5515, -101.0020], 'AK': [63.5887, -154.4931],
+            'VT': [44.0459, -72.7107], 'WY': [42.7475, -107.2085]
+        };
         
         let createdCount = 0;
-        states.forEach(state => {
+        Object.keys(stateCenters).forEach(stateCode => {
             try {
-                const rect = L.rectangle(state.bounds, {
-                    color: '#2c3e50',
-                    weight: 3,
-                    fillColor: '#3498db',
-                    fillOpacity: 0.8
-                }).addTo(map);
+                const coords = stateCenters[stateCode];
+                const count = stateData[stateCode] ? stateData[stateCode].team_count : 0;
                 
-                // Add state label
-                const center = rect.getBounds().getCenter();
-                const label = L.divIcon({
-                    className: 'state-label',
-                    html: `<div style="background: rgba(255,255,255,0.95); padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; color: #2c3e50; border: 1px solid #2c3e50;">${state.code}</div>`,
-                    iconSize: [35, 25]
+                // Create marker with organization count
+                const marker = L.marker(coords).addTo(map);
+                
+                // Add popup with state info
+                marker.bindPopup(`
+                    <strong>${stateCode}</strong><br>
+                    Organizations found: <strong>${count}</strong>
+                `);
+                
+                // Add click handler
+                marker.on('click', function() {
+                    onStateClick(stateCode);
                 });
-                L.marker(center, {icon: label}).addTo(map);
                 
-                stateLayers[state.code] = rect;
+                stateLayers[stateCode] = marker;
                 createdCount++;
                 
-                rect.on('click', function() {
-                    onStateClick(state.code);
-                });
-                
-                rect.on('mouseover', function() {
-                    rect.setStyle({
-                        fillOpacity: 0.9,
-                        weight: 3
-                    });
-                });
-                
-                rect.on('mouseout', function() {
-                    if (selectedState !== state.code) {
-                        rect.setStyle({
-                            fillOpacity: 0.7,
-                            weight: 2
-                        });
-                    }
-                });
-                
             } catch (error) {
-                console.error(`Error creating layer for ${state.code}:`, error);
+                console.error(`Error creating marker for ${stateCode}:`, error);
             }
         });
         
-        updateDebugInfo(`Created ${createdCount} state layers successfully`);
+        updateDebugInfo(`Created ${createdCount} state markers successfully`);
         
     } catch (error) {
-        updateDebugInfo('ERROR creating state layers: ' + error.message);
-        console.error('State layer creation error:', error);
+        updateDebugInfo('ERROR creating state markers: ' + error.message);
+        console.error('State marker creation error:', error);
     }
 }
 
