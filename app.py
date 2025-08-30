@@ -481,13 +481,14 @@ def api_map_states():
     try:
         from sqlalchemy import func, distinct
         
-        # Get state coverage statistics using county organization data
+        # Get state coverage statistics with explicit joins
         state_stats = db.session.query(
             State.abbreviation,
             State.name,
-            func.count(County.organization_name).label('team_count'),
-            func.count(County.id).label('total_counties')
-        ).select_from(State).outerjoin(County, State.id == County.state_id).filter(County.organization_name.isnot(None)).group_by(State.id, State.abbreviation, State.name).all()
+            func.count(distinct(SearchResult.organization_name)).label('team_count'),
+            func.count(distinct(SearchResult.county_id)).label('counties_with_teams'),
+            func.count(distinct(County.id)).label('total_counties')
+        ).select_from(State).outerjoin(County, State.id == County.state_id).outerjoin(SearchResult, County.id == SearchResult.county_id).filter(SearchResult.organization_name.isnot(None)).group_by(State.id, State.abbreviation, State.name).all()
         
         # Get all states to ensure we include those with 0 organizations
         all_states = db.session.query(State.abbreviation, State.name).all()
@@ -529,26 +530,39 @@ def api_map_state_details(state_abbr):
         if not state:
             return jsonify({"success": False, "error": "State not found"})
         
-        # Get all counties in this state with their organization data
-        counties = County.query.filter_by(state_id=state.id).order_by(County.name).all()
+        # Get existing teams in this state
+        teams = db.session.query(SearchResult).join(County).filter(
+            County.state_id == state.id,
+            SearchResult.organization_name.isnot(None)
+        ).order_by(SearchResult.confidence_score.desc()).limit(20).all()
         
-        county_data = []
-        for county in counties:
-            county_data.append({
-                'id': county.id,
-                'name': county.name,
-                'organization_name': county.organization_name,
-                'description': county.description,
-                'key_personnel_name': county.key_personnel_name,
-                'key_personnel_title': county.key_personnel_title,
-                'key_personnel_phone': county.key_personnel_phone,
-                'key_personnel_email': county.key_personnel_email,
-                'contact_info': county.contact_info,
-                'address': county.address,
-                'confidence_score': county.confidence_score,
-                'has_organization': county.has_organization,
-                'last_searched_at': county.last_searched_at.strftime('%Y-%m-%d %H:%M') if county.last_searched_at else None,
-                'search_query': county.search_query
+        # Get recent jobs for this state
+        recent_jobs = ProspectingJob.query.filter_by(state_id=state.id).order_by(
+            ProspectingJob.created_at.desc()
+        ).limit(5).all()
+        
+        team_data = []
+        for team in teams:
+            team_data.append({
+                'id': team.id,
+                'organization_name': team.organization_name,
+                'county': team.county.name,
+                'key_personnel_name': team.key_personnel_name,
+                'key_personnel_title': team.key_personnel_title,
+                'key_personnel_phone': team.key_personnel_phone,
+                'key_personnel_email': team.key_personnel_email,
+                'confidence_score': team.confidence_score,
+                'created_at': team.created_at.strftime('%Y-%m-%d')
+            })
+        
+        job_data = []
+        for job in recent_jobs:
+            job_data.append({
+                'id': job.id,
+                'search_query': job.search_query,
+                'status': job.status,
+                'progress_percentage': job.progress_percentage,
+                'created_at': job.created_at.strftime('%Y-%m-%d %H:%M')
             })
         
         return jsonify({
@@ -557,14 +571,15 @@ def api_map_state_details(state_abbr):
                 "name": state.name,
                 "abbreviation": state.abbreviation
             },
-            "counties": county_data
+            "teams": team_data,
+            "recent_jobs": job_data
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
 @app.route('/api/map/start-search/<state_abbr>', methods=['POST'])
 def api_map_start_search(state_abbr):
-    """Start a search for a state - updates county records directly"""
+    """Start a new search from map interface"""
     try:
         data = request.get_json()
         search_query = data.get('search_query', 'overdose response team')
@@ -573,56 +588,32 @@ def api_map_start_search(state_abbr):
         if not state:
             return jsonify({"success": False, "error": "State not found"})
         
-        # Get all counties in this state
-        counties = County.query.filter_by(state_id=state.id).all()
-        
-        # Start background search for each county
-        def search_state_counties(state_id, search_query, county_ids):
-            """Background function to search all counties in a state"""
-            with app.app_context():
-                from services.prospector import ProspectorService
-                prospector = ProspectorService()
-                
-                for county_id in county_ids:
-                    try:
-                        county = County.query.get(county_id)
-                        if county:
-                            # Search this county and update the county record directly
-                            result = prospector.search_single_county(county, search_query)
-                            if result:
-                                # Update county with the best result
-                                county.organization_name = result.get('organization_name')
-                                county.description = result.get('description')
-                                county.key_personnel_name = result.get('key_personnel_name')
-                                county.key_personnel_title = result.get('key_personnel_title')
-                                county.key_personnel_phone = result.get('key_personnel_phone')
-                                county.key_personnel_email = result.get('key_personnel_email')
-                                county.contact_info = result.get('contact_info')
-                                county.address = result.get('address')
-                                county.confidence_score = result.get('confidence_score', 0.0)
-                                county.source_urls = result.get('source_urls')
-                                county.ai_response_raw = result.get('ai_response_raw')
-                                county.last_searched_at = datetime.utcnow()
-                                county.search_query = search_query
-                                
-                                db.session.commit()
-                    except Exception as e:
-                        print(f"Error searching county {county_id}: {e}")
-                        continue
-        
-        # Start background thread
-        county_ids = [county.id for county in counties]
-        thread = threading.Thread(
-            target=search_state_counties, 
-            args=(state.id, search_query, county_ids)
+        # Create new job
+        job = ProspectingJob(
+            search_query=search_query,
+            state_id=state.id,
+            status='pending'
         )
+        db.session.add(job)
+        db.session.commit()
+        
+        # Start the prospecting process in background with app context
+        from services.prospector import ProspectorService
+        
+        def run_job_with_context(job_id):
+            """Run job with Flask app context"""
+            with app.app_context():
+                prospector = ProspectorService()
+                prospector.run_job(job_id)
+        
+        thread = threading.Thread(target=run_job_with_context, args=(job.id,))
         thread.daemon = True
         thread.start()
         
         return jsonify({
             "success": True,
-            "message": f"Started searching {len(counties)} counties in {state.name}",
-            "counties_count": len(counties)
+            "job_id": job.id,
+            "message": f"Search started for {state.name}"
         })
         
     except Exception as e:
