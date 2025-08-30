@@ -197,79 +197,40 @@
         color: #333;
     }
     
-    /* County grid styles */
-    .county-row {
-        display: grid;
-        grid-template-columns: 150px 1fr 120px 100px 100px;
-        gap: 10px;
-        align-items: center;
-        padding: 12px;
-        border: 1px solid #dee2e6;
-        border-radius: 5px;
-        margin-bottom: 8px;
-        background: #f8f9fa;
-    }
-    
-    .county-row.header {
-        background: #007bff;
-        color: white;
-        font-weight: bold;
-        border: none;
+    /* County table styles */
+    .county-table {
+        margin-top: 15px;
     }
     
     .county-row.no-result {
-        background: #f8f9fa;
-        color: #6c757d;
+        background-color: #f8f9fa;
     }
     
     .county-row.has-result {
-        background: #e8f5e8;
+        background-color: #e8f5e8;
     }
     
     .county-row.golden {
-        background: #fff3cd;
-        border: 2px solid #ffc107;
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
     }
     
-    .county-name {
-        font-weight: bold;
+    .county-row.golden td {
+        border-color: #ffeaa7;
     }
     
-    .organization-info {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-    
-    .org-name {
+    .organization-name {
         font-weight: bold;
         color: #007bff;
     }
     
-    .org-contact {
+    .contact-info {
         font-size: 0.9em;
         color: #6c757d;
     }
     
-    .action-buttons {
-        display: flex;
-        gap: 5px;
-    }
-    
-    .btn-sm {
-        padding: 4px 8px;
+    .confidence-badge {
         font-size: 0.8em;
-    }
-    
-    .btn-golden {
-        background: #ffc107;
-        border-color: #ffc107;
-        color: #212529;
-    }
-    
-    .btn-golden:hover {
-        background: #e0a800;
-        border-color: #d39e00;
     }
 </style>
 {% endblock %}
@@ -342,10 +303,14 @@
                 <div id="modal-loading">Loading...</div>
                 <div id="modal-content" style="display: none;">
                     <div class="section">
-                        <h3>County Results</h3>
-                        <div style="margin-bottom: 15px;">
-                            <input type="text" id="search-query" placeholder="Search query (e.g., overdose response team)" style="width: 70%; padding: 8px; margin-right: 10px;">
-                            <button id="start-search-btn" class="btn btn-primary">Search All Counties</button>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3><i class="fas fa-building text-primary"></i> County Results</h3>
+                            <div>
+                                <input type="text" id="search-query" placeholder="Search query (e.g., overdose response team)" class="form-control d-inline-block" style="width: 300px; margin-right: 10px;">
+                                <button id="start-search-btn" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Search All Counties
+                                </button>
+                            </div>
                         </div>
                         <div id="counties-grid"></div>
                     </div>
@@ -515,12 +480,19 @@ function displayCounties(counties) {
     }
     
     let html = `
-        <div class="county-row header">
-            <div>County</div>
-            <div>Organization</div>
-            <div>Confidence</div>
-            <div>Actions</div>
-        </div>
+        <div class="table-responsive county-table">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>County</th>
+                        <th>Organization</th>
+                        <th>Key Personnel / Contact</th>
+                        <th>Confidence</th>
+                        <th>Found</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
     `;
     
     counties.forEach(county => {
@@ -538,30 +510,66 @@ function displayCounties(counties) {
         }
         
         html += `
-            <div class="${rowClass}">
-                <div class="county-name">${county.name}</div>
-                <div class="organization-info">
+            <tr class="${rowClass}">
+                <td>
+                    <strong>${county.name}</strong><br>
+                    <small class="text-muted">FIPS: ${county.fips_code}</small>
+                </td>
+                <td>
                     ${hasResult ? `
-                        <div class="org-name">${result.organization_name}</div>
-                        ${result.key_personnel_name ? `<div class="org-contact">${result.key_personnel_name}${result.key_personnel_title ? ` (${result.key_personnel_title})` : ''}</div>` : ''}
-                        ${result.key_personnel_phone ? `<div class="org-contact">📞 ${result.key_personnel_phone}</div>` : ''}
-                        ${result.key_personnel_email ? `<div class="org-contact">✉️ ${result.key_personnel_email}</div>` : ''}
-                        <div class="org-contact">Found: ${result.created_at}</div>
-                    ` : '<div class="org-contact">No organization found</div>'}
-                </div>
-                <div>
-                    ${hasResult ? `${result.confidence_score}%` : '-'}
-                </div>
-                <div class="action-buttons">
+                        <div class="organization-name">${result.organization_name}</div>
+                    ` : '<em class="text-muted">No organizations found</em>'}
+                </td>
+                <td>
+                    ${hasResult && result.key_personnel_name ? `
+                        <strong>${result.key_personnel_name}</strong><br>
+                        <small class="text-muted">${result.key_personnel_title || ''}</small><br>
+                        ${result.key_personnel_phone ? `<i class="fas fa-phone text-success"></i> ${result.key_personnel_phone}<br>` : ''}
+                        ${result.key_personnel_email ? `<i class="fas fa-envelope text-primary"></i> ${result.key_personnel_email}` : ''}
+                    ` : '<small class="text-muted">No contact info</small>'}
+                </td>
+                <td>
                     ${hasResult ? `
-                        ${!isGolden ? `<button class="btn btn-sm btn-golden" onclick="markAsGolden(${result.id})">⭐ Golden</button>` : '<span style="color: #ffc107;">⭐ Golden</span>'}
-                        <button class="btn btn-sm btn-danger" onclick="deleteResult(${result.id}, ${county.id})">🗑️ Delete</button>
-                    ` : ''}
-                    <button class="btn btn-sm btn-primary" onclick="searchCounty(${county.id})">🔍 Search</button>
-                </div>
-            </div>
+                        <span class="badge bg-${result.confidence_score >= 80 ? 'success' : result.confidence_score >= 60 ? 'warning' : 'danger'} confidence-badge">
+                            ${result.confidence_score}%
+                        </span>
+                    ` : '-'}
+                </td>
+                <td>
+                    ${hasResult ? `
+                        <small class="text-muted">${result.created_at}</small>
+                    ` : '-'}
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        ${hasResult ? `
+                            ${!isGolden ? `
+                                <button class="btn btn-sm btn-outline-warning me-1" onclick="markAsGolden(${result.id})" title="Mark as Golden">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                            ` : `
+                                <span class="badge bg-warning text-dark me-1" title="Golden Result">
+                                    <i class="fas fa-star"></i> Golden
+                                </span>
+                            `}
+                            <button class="btn btn-sm btn-outline-danger me-1" onclick="deleteResult(${result.id}, ${county.id})" title="Delete Result">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                        <button class="btn btn-sm btn-outline-primary" onclick="searchCounty(${county.id})" title="Search County">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
         `;
     });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
     
     countiesGrid.innerHTML = html;
 }
