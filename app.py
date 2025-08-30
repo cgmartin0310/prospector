@@ -490,17 +490,35 @@ def api_map_states():
             func.count(distinct(County.id)).label('total_counties')
         ).select_from(State).outerjoin(County, State.id == County.state_id).outerjoin(SearchResult, County.id == SearchResult.county_id).filter(SearchResult.organization_name.isnot(None)).group_by(State.id, State.abbreviation, State.name).all()
         
-        # Format data for frontend
+        # Get all states to ensure we include those with 0 organizations
+        all_states = db.session.query(State.abbreviation, State.name).all()
+        state_dict = {stat.abbreviation: stat for stat in state_stats}
+        
+        # Create complete map data including states with 0 organizations
         map_data = []
-        for stat in state_stats:
-            map_data.append({
-                'state_code': stat.abbreviation,
-                'state_name': stat.name,
-                'team_count': stat.team_count or 0,
-                'counties_with_teams': stat.counties_with_teams or 0,
-                'total_counties': stat.total_counties or 0,
-                'coverage_percentage': round((stat.counties_with_teams or 0) / max(stat.total_counties or 1, 1) * 100, 1)
-            })
+        for state in all_states:
+            if state.abbreviation in state_dict:
+                stat = state_dict[state.abbreviation]
+                map_data.append({
+                    'state_code': stat.abbreviation,
+                    'state_name': stat.name,
+                    'team_count': stat.team_count or 0,
+                    'counties_with_teams': stat.counties_with_teams or 0,
+                    'total_counties': stat.total_counties or 0,
+                    'coverage_percentage': round((stat.counties_with_teams or 0) / max(stat.total_counties or 1, 1) * 100, 1)
+                })
+            else:
+                # State with no organizations
+                map_data.append({
+                    'state_code': state.abbreviation,
+                    'state_name': state.name,
+                    'team_count': 0,
+                    'counties_with_teams': 0,
+                    'total_counties': 0,
+                    'coverage_percentage': 0.0
+                })
+        
+
         
         return jsonify({"success": True, "data": map_data})
     except Exception as e:

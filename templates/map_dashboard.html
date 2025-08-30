@@ -124,19 +124,19 @@
             <p>This map shows organization coverage by state with color coding:</p>
             <div style="display: flex; justify-content: center; gap: 20px; margin: 20px 0;">
                 <div style="display: flex; align-items: center; gap: 5px;">
-                    <div style="width: 20px; height: 15px; background: #e9ecef; border: 1px solid #ccc;"></div>
+                    <div style="width: 20px; height: 15px; background: #f44336; border: 1px solid #ccc;"></div>
                     <span>0 organizations</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 5px;">
-                    <div style="width: 20px; height: 15px; background: #ffeb3b; border: 1px solid #ccc;"></div>
+                    <div style="width: 20px; height: 15px; background: #ff9800; border: 1px solid #ccc;"></div>
                     <span>1-5 organizations</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 5px;">
-                    <div style="width: 20px; height: 15px; background: #ff9800; border: 1px solid #ccc;"></div>
+                    <div style="width: 20px; height: 15px; background: #ffeb3b; border: 1px solid #ccc;"></div>
                     <span>6-15 organizations</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 5px;">
-                    <div style="width: 20px; height: 15px; background: #f44336; border: 1px solid #ccc;"></div>
+                    <div style="width: 20px; height: 15px; background: #4caf50; border: 1px solid #ccc;"></div>
                     <span>16+ organizations</span>
                 </div>
             </div>
@@ -255,10 +255,10 @@ function updateMapColors() {
 }
 
 function getColorByCount(count) {
-    if (count === 0) return '#e9ecef';  // Light gray
-    if (count <= 5) return '#ffeb3b';   // Yellow
-    if (count <= 15) return '#ff9800';  // Orange
-    return '#f44336';                   // Red
+    if (count === 0) return '#f44336';  // Red
+    if (count <= 5) return '#ff9800';   // Orange
+    if (count <= 15) return '#ffeb3b';  // Yellow
+    return '#4caf50';                   // Green
 }
 
 function setupStateInteractions() {
