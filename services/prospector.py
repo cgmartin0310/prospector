@@ -97,6 +97,71 @@ class ProspectorService:
     
 
     
+    def run_job_for_county(self, job_id: int, county_id: int):
+        """
+        Run a prospecting job for a specific county only.
+        This runs in a background thread.
+        Note: This method expects to be called within a Flask app context.
+        """
+        job = ProspectingJob.query.get(job_id)
+        if not job:
+            return
+            
+        county = County.query.get(county_id)
+        if not county:
+            return
+            
+        state = State.query.get(county.state_id)
+        if not state:
+            return
+            
+        try:
+            # Update job status
+            job.status = 'running'
+            job.started_at = datetime.utcnow()
+            job.current_county = county.name
+            db.session.commit()
+            
+            print(f"Starting prospecting job {job_id} for {county.name} County, {state.name}")
+            print(f"Search query: '{job.search_query}'")
+            
+            # Conduct AI research for this specific county
+            research_result = self.ai_service.research_county(
+                county.name, 
+                state.name, 
+                job.search_query
+            )
+            
+            print(f"AI research completed for {county.name} County")
+            
+            # Save or update the result for this county
+            self._save_or_update_county_result(job_id, county.id, research_result)
+            
+            print(f"Result saved/updated for {county.name} County")
+            
+            # Mark job as completed
+            job.status = 'completed'
+            job.completed_at = datetime.utcnow()
+            job.current_county = None
+            db.session.commit()
+            
+            results_count = SearchResult.query.filter_by(job_id=job_id).count()
+            print(f"Job {job_id} completed! Found results in {results_count} counties.")
+            
+        except Exception as e:
+            # Mark job as failed
+            try:
+                db.session.rollback()  # Roll back any pending transactions
+                job = ProspectingJob.query.get(job_id)  # Refresh the job object
+                job.status = 'failed'
+                job.error_message = str(e)
+                job.completed_at = datetime.utcnow()
+                db.session.commit()
+            except Exception as commit_error:
+                print(f"Error updating job status: {str(commit_error)}")
+                db.session.rollback()
+            print(f"Job {job_id} failed: {str(e)}")
+
     def _save_or_update_county_result(self, job_id: int, county_id: int, research_result: dict):
         """
         Saves or updates a SearchResult for a given county.
