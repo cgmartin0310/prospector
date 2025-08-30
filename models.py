@@ -24,11 +24,35 @@ class County(db.Model):
     population = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Organization data (nullable - county exists even without results)
+    organization_name = db.Column(db.String(200))
+    description = db.Column(db.Text)
+    key_personnel_name = db.Column(db.String(200))
+    key_personnel_title = db.Column(db.String(100))
+    key_personnel_phone = db.Column(db.String(50))
+    key_personnel_email = db.Column(db.String(200))
+    contact_info = db.Column(db.Text)  # JSON string
+    address = db.Column(db.Text)
+    additional_notes = db.Column(db.Text)
+    confidence_score = db.Column(db.Float, default=0.0)
+    source_urls = db.Column(db.Text)  # JSON array of source URLs
+    ai_response_raw = db.Column(db.Text)  # Raw AI response for debugging
+    last_searched_at = db.Column(db.DateTime)
+    search_query = db.Column(db.Text)  # Last search query used
+    
+    # Status
+    verified = db.Column(db.Boolean, default=False)
+    
     # Relationships
     search_results = db.relationship('SearchResult', backref='county', lazy=True)
     
     def __repr__(self):
         return f'<County {self.name}, {self.state.abbreviation}>'
+    
+    @property
+    def has_organization(self):
+        """Check if this county has an organization result"""
+        return self.organization_name is not None and self.organization_name.strip() != ''
 
 class ProspectingJob(db.Model):
     id = db.Column(db.Integer, primary_key=True)
