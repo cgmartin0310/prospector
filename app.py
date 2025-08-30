@@ -42,6 +42,38 @@ def health_check():
             'error': str(e)
         }), 500
 
+@app.route('/migrate', methods=['POST'])
+def run_migration():
+    """Run the database migration"""
+    try:
+        import subprocess
+        import sys
+        
+        # Run the migration script
+        result = subprocess.run([
+            sys.executable, 'migrate_county_organization_fields.py'
+        ], capture_output=True, text=True, cwd='/opt/render/project/src')
+        
+        if result.returncode == 0:
+            return jsonify({
+                'success': True,
+                'message': 'Migration completed successfully',
+                'output': result.stdout
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Migration failed',
+                'output': result.stdout,
+                'error_output': result.stderr
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/')
 def index():
     """Main dashboard showing recent jobs and stats"""
