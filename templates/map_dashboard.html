@@ -530,8 +530,8 @@ function displayCounties(counties) {
                 </td>
                 <td>
                     ${hasResult ? `
-                        <span class="badge bg-${result.confidence_score >= 80 ? 'success' : result.confidence_score >= 60 ? 'warning' : 'danger'} confidence-badge">
-                            ${result.confidence_score}%
+                        <span class="badge bg-${Math.round(result.confidence_score * 100) >= 80 ? 'success' : Math.round(result.confidence_score * 100) >= 60 ? 'warning' : 'danger'} confidence-badge">
+                            ${Math.round(result.confidence_score * 100)}%
                         </span>
                     ` : '-'}
                 </td>
