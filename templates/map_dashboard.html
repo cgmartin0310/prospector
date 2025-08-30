@@ -108,6 +108,94 @@
         z-index: 1000;
         display: none;
     }
+    
+    /* Modal styles */
+    .modal {
+        position: fixed;
+        z-index: 10000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+    
+    .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 0;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 800px;
+        max-height: 80vh;
+        overflow-y: auto;
+        border-radius: 8px;
+    }
+    
+    .modal-header {
+        background: #007bff;
+        color: white;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .close {
+        color: white;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .close:hover {
+        color: #ccc;
+    }
+    
+    .section {
+        margin-bottom: 25px;
+    }
+    
+    .section h3 {
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 5px;
+        margin-bottom: 15px;
+    }
+    
+    .team-item, .job-item {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .team-item h4 {
+        margin: 0 0 5px 0;
+        color: #007bff;
+    }
+    
+    .job-item h4 {
+        margin: 0 0 5px 0;
+        color: #28a745;
+    }
+    
+    .state-card {
+        background: #e9ecef;
+        border: 2px solid #333;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+        font-weight: bold;
+        color: #333;
+    }
 </style>
 {% endblock %}
 
@@ -167,6 +255,36 @@
     </div>
     
     <div class="tooltip" id="tooltip"></div>
+    
+    <!-- State Details Modal -->
+    <div id="state-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-state-name">State Details</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="modal-loading">Loading...</div>
+                <div id="modal-content" style="display: none;">
+                    <div class="section">
+                        <h3>Organizations Found</h3>
+                        <div id="teams-list"></div>
+                    </div>
+                    <div class="section">
+                        <h3>Recent Searches</h3>
+                        <div id="jobs-list"></div>
+                    </div>
+                    <div class="section">
+                        <h3>Start New Search</h3>
+                        <div style="margin: 10px 0;">
+                            <input type="text" id="search-query" placeholder="Search query (e.g., overdose response team)" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+                            <button id="start-search-btn" class="btn btn-primary">Start Search</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -238,7 +356,7 @@ function updateMapColors() {
         
         stateCard.addEventListener('click', function() {
             console.log('Clicked state:', state.state_code);
-            // You can add navigation or modal here
+            showStateDetails(state.state_code);
         });
         
         stateCard.addEventListener('mouseenter', function() {
@@ -263,6 +381,152 @@ function getColorByCount(count) {
 function setupStateInteractions() {
     // State interactions are now handled in updateMapColors()
     console.log('State interactions will be set up when data loads');
+    
+    // Setup modal close functionality
+    const modal = document.getElementById('state-modal');
+    const closeBtn = document.querySelector('.close');
+    
+    closeBtn.onclick = function() {
+        modal.style.display = 'none';
+    }
+    
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
+}
+
+function showStateDetails(stateCode) {
+    console.log('Showing details for state:', stateCode);
+    
+    const modal = document.getElementById('state-modal');
+    const modalStateName = document.getElementById('modal-state-name');
+    const modalLoading = document.getElementById('modal-loading');
+    const modalContent = document.getElementById('modal-content');
+    
+    // Show modal and loading
+    modal.style.display = 'block';
+    modalLoading.style.display = 'block';
+    modalContent.style.display = 'none';
+    
+    // Find state name from our data
+    const state = stateData.find(s => s.state_code === stateCode);
+    modalStateName.textContent = state ? state.state_name : stateCode;
+    
+    // Fetch state details
+    fetch(`/api/map/state/${stateCode}`)
+        .then(response => response.json())
+        .then(data => {
+            modalLoading.style.display = 'none';
+            modalContent.style.display = 'block';
+            
+            if (data.success) {
+                displayTeams(data.teams);
+                displayJobs(data.recent_jobs);
+                setupSearchFunctionality(stateCode);
+            } else {
+                document.getElementById('teams-list').innerHTML = '<p>Error loading state data: ' + data.error + '</p>';
+                document.getElementById('jobs-list').innerHTML = '<p>Error loading job data</p>';
+            }
+        })
+        .catch(error => {
+            modalLoading.style.display = 'none';
+            modalContent.style.display = 'block';
+            document.getElementById('teams-list').innerHTML = '<p>Error: ' + error.message + '</p>';
+            document.getElementById('jobs-list').innerHTML = '<p>Error loading data</p>';
+        });
+}
+
+function displayTeams(teams) {
+    const teamsList = document.getElementById('teams-list');
+    
+    if (teams.length === 0) {
+        teamsList.innerHTML = '<p>No organizations found in this state yet.</p>';
+        return;
+    }
+    
+    let html = '';
+    teams.forEach(team => {
+        html += `
+            <div class="team-item">
+                <h4>${team.organization_name}</h4>
+                <p><strong>County:</strong> ${team.county}</p>
+                ${team.key_personnel_name ? `<p><strong>Contact:</strong> ${team.key_personnel_name}${team.key_personnel_title ? ` (${team.key_personnel_title})` : ''}</p>` : ''}
+                ${team.key_personnel_phone ? `<p><strong>Phone:</strong> ${team.key_personnel_phone}</p>` : ''}
+                ${team.key_personnel_email ? `<p><strong>Email:</strong> ${team.key_personnel_email}</p>` : ''}
+                <p><strong>Confidence:</strong> ${team.confidence_score}%</p>
+                <p><strong>Found:</strong> ${team.created_at}</p>
+            </div>
+        `;
+    });
+    
+    teamsList.innerHTML = html;
+}
+
+function displayJobs(jobs) {
+    const jobsList = document.getElementById('jobs-list');
+    
+    if (jobs.length === 0) {
+        jobsList.innerHTML = '<p>No recent searches for this state.</p>';
+        return;
+    }
+    
+    let html = '';
+    jobs.forEach(job => {
+        const statusColor = job.status === 'completed' ? '#28a745' : 
+                           job.status === 'running' ? '#ffc107' : '#dc3545';
+        
+        html += `
+            <div class="job-item">
+                <h4>${job.search_query}</h4>
+                <p><strong>Status:</strong> <span style="color: ${statusColor};">${job.status}</span></p>
+                ${job.progress_percentage ? `<p><strong>Progress:</strong> ${job.progress_percentage}%</p>` : ''}
+                <p><strong>Started:</strong> ${job.created_at}</p>
+            </div>
+        `;
+    });
+    
+    jobsList.innerHTML = html;
+}
+
+function setupSearchFunctionality(stateCode) {
+    const searchBtn = document.getElementById('start-search-btn');
+    const searchQuery = document.getElementById('search-query');
+    
+    searchBtn.onclick = function() {
+        const query = searchQuery.value.trim() || 'overdose response team';
+        
+        searchBtn.disabled = true;
+        searchBtn.textContent = 'Starting Search...';
+        
+        fetch(`/api/map/start-search/${stateCode}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                search_query: query
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Search started for ${stateCode}! Job ID: ${data.job_id}`);
+                // Refresh the modal to show the new job
+                showStateDetails(stateCode);
+            } else {
+                alert('Error starting search: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        })
+        .finally(() => {
+            searchBtn.disabled = false;
+            searchBtn.textContent = 'Start Search';
+        });
+    };
 }
 </script>
 {% endblock %}
