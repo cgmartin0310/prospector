@@ -562,40 +562,47 @@ def api_map_state_details(state_abbr):
         if not state:
             return jsonify({"success": False, "error": "State not found"})
         
-        # Get existing teams in this state
-        teams = db.session.query(SearchResult).join(County).filter(
+        # Get all counties in this state
+        counties = County.query.filter_by(state_id=state.id).order_by(County.name).all()
+        
+        # Get existing search results for this state
+        search_results = db.session.query(SearchResult).join(County).filter(
             County.state_id == state.id,
             SearchResult.organization_name.isnot(None)
-        ).order_by(SearchResult.confidence_score.desc()).limit(20).all()
+        ).all()
         
-        # Get recent jobs for this state
-        recent_jobs = ProspectingJob.query.filter_by(state_id=state.id).order_by(
-            ProspectingJob.created_at.desc()
-        ).limit(5).all()
+        # Create a map of county_id to search result
+        results_by_county = {}
+        for result in search_results:
+            results_by_county[result.county_id] = result
         
-        team_data = []
-        for team in teams:
-            team_data.append({
-                'id': team.id,
-                'organization_name': team.organization_name,
-                'county': team.county.name,
-                'key_personnel_name': team.key_personnel_name,
-                'key_personnel_title': team.key_personnel_title,
-                'key_personnel_phone': team.key_personnel_phone,
-                'key_personnel_email': team.key_personnel_email,
-                'confidence_score': team.confidence_score,
-                'created_at': team.created_at.strftime('%Y-%m-%d')
-            })
-        
-        job_data = []
-        for job in recent_jobs:
-            job_data.append({
-                'id': job.id,
-                'search_query': job.search_query,
-                'status': job.status,
-                'progress_percentage': job.progress_percentage,
-                'created_at': job.created_at.strftime('%Y-%m-%d %H:%M')
-            })
+        counties_data = []
+        for county in counties:
+            result = results_by_county.get(county.id)
+            
+            county_data = {
+                'id': county.id,
+                'name': county.name,
+                'fips_code': county.fips_code,
+                'population': county.population,
+                'has_result': result is not None,
+                'result': None
+            }
+            
+            if result:
+                county_data['result'] = {
+                    'id': result.id,
+                    'organization_name': result.organization_name,
+                    'key_personnel_name': result.key_personnel_name,
+                    'key_personnel_title': result.key_personnel_title,
+                    'key_personnel_phone': result.key_personnel_phone,
+                    'key_personnel_email': result.key_personnel_email,
+                    'confidence_score': result.confidence_score,
+                    'created_at': result.created_at.strftime('%Y-%m-%d'),
+                    'verified': getattr(result, 'verified', False)
+                }
+            
+            counties_data.append(county_data)
         
         return jsonify({
             "success": True,
@@ -603,8 +610,7 @@ def api_map_state_details(state_abbr):
                 "name": state.name,
                 "abbreviation": state.abbreviation
             },
-            "teams": team_data,
-            "recent_jobs": job_data
+            "counties": counties_data
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
@@ -653,6 +659,84 @@ def api_map_start_search(state_abbr):
 
 @app.route('/api/county/<int:county_id>/search', methods=['POST'])
 def api_county_search(county_id):
+    """Search for organizations in a specific county"""
+    try:
+        data = request.get_json()
+        search_query = data.get('search_query', 'overdose response team')
+        
+        county = County.query.get(county_id)
+        if not county:
+            return jsonify({"success": False, "error": "County not found"})
+        
+        # Create new job for this county
+        job = ProspectingJob(
+            search_query=search_query,
+            state_id=county.state_id,
+            status='pending'
+        )
+        db.session.add(job)
+        db.session.commit()
+        
+        # Start the prospecting process in background with app context
+        from services.prospector import ProspectorService
+        
+        def run_job_with_context(job_id, target_county_id):
+            """Run job with Flask app context"""
+            with app.app_context():
+                prospector = ProspectorService()
+                # Modify to only search the specific county
+                prospector.run_job_for_county(job_id, target_county_id)
+        
+        thread = threading.Thread(target=run_job_with_context, args=(job.id, county_id))
+        thread.daemon = True
+        thread.start()
+        
+        return jsonify({
+            "success": True,
+            "job_id": job.id,
+            "message": f"Search started for {county.name} County"
+        })
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/search-result/<int:result_id>/delete', methods=['DELETE'])
+def api_delete_search_result(result_id):
+    """Delete a search result"""
+    try:
+        result = SearchResult.query.get(result_id)
+        if not result:
+            return jsonify({"success": False, "error": "Search result not found"})
+        
+        db.session.delete(result)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Search result deleted successfully"
+        })
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/search-result/<int:result_id>/golden', methods=['POST'])
+def api_mark_as_golden(result_id):
+    """Mark a search result as golden"""
+    try:
+        result = SearchResult.query.get(result_id)
+        if not result:
+            return jsonify({"success": False, "error": "Search result not found"})
+        
+        result.verified = True
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Search result marked as golden"
+        })
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
     """Search a specific county using AI"""
     try:
         data = request.get_json()
