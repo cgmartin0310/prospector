@@ -737,6 +737,82 @@ def api_mark_as_golden(result_id):
         
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/search-result/<int:result_id>', methods=['GET'])
+def api_get_search_result(result_id):
+    """Get a specific search result"""
+    try:
+        result = SearchResult.query.get(result_id)
+        if not result:
+            return jsonify({"success": False, "error": "Search result not found"})
+        
+        result_data = {
+            'id': result.id,
+            'organization_name': result.organization_name,
+            'description': result.description,
+            'key_personnel_name': result.key_personnel_name,
+            'key_personnel_title': result.key_personnel_title,
+            'key_personnel_phone': result.key_personnel_phone,
+            'key_personnel_email': result.key_personnel_email,
+            'address': result.address,
+            'additional_notes': result.additional_notes,
+            'confidence_score': result.confidence_score,
+            'source_urls': result.source_urls,
+            'contact_info': result.contact_info,
+            'ai_response_raw': result.ai_response_raw,
+            'created_at': result.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'verified': result.verified
+        }
+        
+        return jsonify({
+            "success": True,
+            "result": result_data
+        })
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/search-result/<int:result_id>/update', methods=['PUT'])
+def api_update_search_result(result_id):
+    """Update a search result"""
+    try:
+        result = SearchResult.query.get(result_id)
+        if not result:
+            return jsonify({"success": False, "error": "Search result not found"})
+        
+        data = request.get_json()
+        
+        # Update fields if provided
+        if 'organization_name' in data:
+            result.organization_name = data['organization_name']
+        if 'description' in data:
+            result.description = data['description']
+        if 'key_personnel_name' in data:
+            result.key_personnel_name = data['key_personnel_name']
+        if 'key_personnel_title' in data:
+            result.key_personnel_title = data['key_personnel_title']
+        if 'key_personnel_phone' in data:
+            result.key_personnel_phone = data['key_personnel_phone']
+        if 'key_personnel_email' in data:
+            result.key_personnel_email = data['key_personnel_email']
+        if 'address' in data:
+            result.address = data['address']
+        if 'additional_notes' in data:
+            result.additional_notes = data['additional_notes']
+        if 'confidence_score' in data:
+            result.confidence_score = data['confidence_score']
+        if 'source_urls' in data:
+            result.source_urls = data['source_urls']
+        
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Search result updated successfully"
+        })
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
     """Search a specific county using AI"""
     try:
         data = request.get_json()

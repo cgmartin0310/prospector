@@ -318,6 +318,93 @@
             </div>
         </div>
     </div>
+    
+    <!-- Edit Result Modal -->
+    <div id="edit-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit text-info"></i> Edit Organization</h2>
+                <span class="close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="edit-form">
+                    <input type="hidden" id="edit-result-id">
+                    
+                    <div class="mb-3">
+                        <label for="edit-organization-name" class="form-label">Organization Name</label>
+                        <input type="text" class="form-control" id="edit-organization-name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit-description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit-key-personnel-name" class="form-label">Key Personnel Name</label>
+                                <input type="text" class="form-control" id="edit-key-personnel-name">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit-key-personnel-title" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="edit-key-personnel-title">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit-key-personnel-phone" class="form-label">Phone</label>
+                                <input type="text" class="form-control" id="edit-key-personnel-phone">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit-key-personnel-email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="edit-key-personnel-email">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit-address" class="form-label">Address</label>
+                        <input type="text" class="form-control" id="edit-address">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit-additional-notes" class="form-label">Additional Notes</label>
+                        <textarea class="form-control" id="edit-additional-notes" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit-confidence-score" class="form-label">Confidence Score (%)</label>
+                                <input type="number" class="form-control" id="edit-confidence-score" min="0" max="100">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit-source-urls" class="form-label">Source URLs</label>
+                                <input type="text" class="form-control" id="edit-source-urls" placeholder="Comma-separated URLs">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -543,6 +630,9 @@ function displayCounties(counties) {
                 <td>
                     <div class="btn-group" role="group">
                         ${hasResult ? `
+                            <button class="btn btn-sm btn-outline-info me-1" onclick="editResult(${result.id})" title="Edit Result">
+                                <i class="fas fa-edit"></i>
+                            </button>
                             ${!isGolden ? `
                                 <button class="btn btn-sm btn-outline-warning me-1" onclick="markAsGolden(${result.id})" title="Mark as Golden">
                                     <i class="fas fa-star"></i>
@@ -673,17 +763,103 @@ function markAsGolden(resultId) {
         method: 'POST'
     })
     .then(response => response.json())
-            .then(data => {
+    .then(data => {
+        if (data.success) {
+            alert('Result marked as golden!');
+            // Refresh the modal to show updated results
+            if (currentStateCode) {
+                showStateDetails(currentStateCode);
+            }
+        } else {
+            alert('Error marking as golden: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    });
+}
+
+function editResult(resultId) {
+    // Fetch the result data
+    fetch(`/api/search-result/${resultId}`)
+        .then(response => response.json())
+        .then(data => {
             if (data.success) {
-                alert('Result marked as golden!');
-                // Refresh the modal to show updated results
-                if (currentStateCode) {
-                    showStateDetails(currentStateCode);
-                }
+                populateEditForm(data.result);
+                document.getElementById('edit-modal').style.display = 'block';
             } else {
-                alert('Error marking as golden: ' + data.error);
+                alert('Error loading result: ' + data.error);
             }
         })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+}
+
+function populateEditForm(result) {
+    document.getElementById('edit-result-id').value = result.id;
+    document.getElementById('edit-organization-name').value = result.organization_name || '';
+    document.getElementById('edit-description').value = result.description || '';
+    document.getElementById('edit-key-personnel-name').value = result.key_personnel_name || '';
+    document.getElementById('edit-key-personnel-title').value = result.key_personnel_title || '';
+    document.getElementById('edit-key-personnel-phone').value = result.key_personnel_phone || '';
+    document.getElementById('edit-key-personnel-email').value = result.key_personnel_email || '';
+    document.getElementById('edit-address').value = result.address || '';
+    document.getElementById('edit-additional-notes').value = result.additional_notes || '';
+    document.getElementById('edit-confidence-score').value = Math.round((result.confidence_score || 0) * 100);
+    document.getElementById('edit-source-urls').value = result.source_urls || '';
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal').style.display = 'none';
+}
+
+// Setup edit form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const editForm = document.getElementById('edit-form');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveEditResult();
+        });
+    }
+});
+
+function saveEditResult() {
+    const resultId = document.getElementById('edit-result-id').value;
+    const formData = {
+        organization_name: document.getElementById('edit-organization-name').value,
+        description: document.getElementById('edit-description').value,
+        key_personnel_name: document.getElementById('edit-key-personnel-name').value,
+        key_personnel_title: document.getElementById('edit-key-personnel-title').value,
+        key_personnel_phone: document.getElementById('edit-key-personnel-phone').value,
+        key_personnel_email: document.getElementById('edit-key-personnel-email').value,
+        address: document.getElementById('edit-address').value,
+        additional_notes: document.getElementById('edit-additional-notes').value,
+        confidence_score: parseFloat(document.getElementById('edit-confidence-score').value) / 100,
+        source_urls: document.getElementById('edit-source-urls').value
+    };
+    
+    fetch(`/api/search-result/${resultId}/update`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Result updated successfully!');
+            closeEditModal();
+            // Refresh the modal to show updated results
+            if (currentStateCode) {
+                showStateDetails(currentStateCode);
+            }
+        } else {
+            alert('Error updating result: ' + data.error);
+        }
+    })
     .catch(error => {
         alert('Error: ' + error.message);
     });
