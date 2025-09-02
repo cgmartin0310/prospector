@@ -163,13 +163,27 @@ SEARCH STRATEGY:
 2. **Multi-Source Verification**: Check multiple sources for each organization (official websites, government directories, social media, news articles, etc.)
 3. **Contact Discovery Priority**: Focus on finding the key decision-maker (director, manager, coordinator, head, executive director) of each organization
 4. **Systematic Approach**: Search systematically through government agencies, non-profits, healthcare providers, and community organizations
+5. **Comprehensive Coverage**: Search through ALL potential organization types: government agencies, health departments, hospitals, clinics, non-profits, community centers, faith-based organizations, educational institutions, law enforcement, emergency services, and private healthcare providers
+6. **Geographic Verification**: Verify organizations are physically located in or serve {county_name} County specifically
+7. **Service Overlap**: Look for organizations that might serve multiple counties but have a presence in {county_name} County
 
 CONTACT INFORMATION SEARCH TECHNIQUES:
-- **Key Personnel**: Look for "About Us", "Staff", "Leadership", "Contact" pages
-- **Phone Numbers**: Prefer direct extensions over main switchboard numbers
-- **Email Addresses**: Look for patterns like firstname.lastname@org.org or director@org.org
-- **Alternative Sources**: Check LinkedIn, professional directories, press releases, annual reports
-- **Verification**: Cross-reference contact info across multiple sources
+- **Key Personnel**: Look for "About Us", "Staff", "Leadership", "Contact", "Team", "Board of Directors", "Management" pages
+- **Phone Numbers**: Prefer direct extensions over main switchboard numbers. Look for department-specific numbers
+- **Email Addresses**: Look for patterns like firstname.lastname@org.org, director@org.org, manager@org.org, coordinator@org.org, firstname@org.org
+- **Alternative Sources**: Check LinkedIn, professional directories, press releases, annual reports, 990 tax forms, government contracts, news articles, social media profiles
+- **Verification**: Cross-reference contact info across multiple sources (website, social media, government directories, news articles)
+- **Department Contacts**: Look for specific department heads (Emergency Services Director, Health Department Director, etc.)
+- **Secondary Contacts**: Find backup contacts like assistant directors, program managers, or department heads
+- **Recent Updates**: Check for recent staff changes, promotions, or organizational updates
+
+RESEARCH DEPTH REQUIREMENTS:
+- **Thorough Investigation**: Spend sufficient time researching each potential organization
+- **Multiple Search Terms**: Use variations of search terms (e.g., "overdose response", "substance abuse prevention", "harm reduction", "recovery services")
+- **Geographic Variations**: Search for organizations in nearby cities/towns within the county
+- **Service Variations**: Look for organizations that might not explicitly mention "overdose" but provide related services
+- **Recent Information**: Check for organizations that may have changed names, merged, or are newly established
+- **Partnership Networks**: Look for organizations mentioned in partnership announcements, grant awards, or collaborative programs
 
 CRITICAL - NO HALLUCINATION:
 - NEVER invent names, phone numbers, email addresses, or addresses
@@ -191,7 +205,7 @@ For each organization found, provide complete information in this exact JSON for
   "organizations": [
     {{
       "name": "Full organization name",
-      "description": "Detailed description of services, mission, and target population",
+      "description": "Detailed description of services, mission, target population, and specific programs offered",
       "key_personnel": {{
         "name": "Real name of director/manager/coordinator (or null if not found)",
         "title": "Their specific title (or null if not found)",
@@ -204,17 +218,17 @@ For each organization found, provide complete information in this exact JSON for
         "website": "Real organization website URL (or null if not found)"
       }},
       "address": "Real full physical address (or null if not found)",
-      "notes": "Additional relevant information about services, hours, eligibility, or key personnel (or null)",
+      "notes": "Additional relevant information about services, hours, eligibility, funding sources, partnerships, recent news, or key personnel (or null)",
       "confidence": 0.95
     }}
   ],
-  "search_summary": "Comprehensive summary of your research process, sources consulted, verification methods, and findings. Include specific search terms and sources used."
+  "search_summary": "Comprehensive summary of your research process, sources consulted, verification methods, and findings. Include specific search terms used, all sources checked (websites, directories, social media, news, etc.), verification steps taken, and any challenges encountered. Be thorough in documenting your research methodology."
 }}
 
 If no organizations are found, return:
 {{
   "organizations": [],
-  "search_summary": "No organizations matching '{search_query}' were found in {county_name} County, {state_name} after thorough research of government agencies, non-profits, healthcare providers, and community organizations. Searched for: [list specific search terms used]."
+  "search_summary": "No organizations matching '{search_query}' were found in {county_name} County, {state_name} after thorough research of government agencies, non-profits, healthcare providers, and community organizations. Searched for: [list specific search terms used]. Sources checked: [list all sources consulted]. Research methodology: [describe your systematic approach and why no results were found]."
 }}
 
 Respond with ONLY valid JSON in the exact format specified above.
@@ -235,11 +249,22 @@ SEARCH STRATEGY:
 4. **Systematic Approach**: Search through government agencies, non-profits, healthcare providers, community organizations
 
 CONTACT INFORMATION SEARCH TECHNIQUES:
-- **Key Personnel**: Look for "About Us", "Staff", "Leadership", "Contact" pages
-- **Phone Numbers**: Prefer direct extensions over main switchboard
-- **Email Addresses**: Look for patterns like firstname.lastname@org.org or director@org.org
-- **Alternative Sources**: Check LinkedIn, professional directories, press releases
-- **Verification**: Cross-reference contact info across multiple sources
+- **Key Personnel**: Look for "About Us", "Staff", "Leadership", "Contact", "Team", "Board of Directors", "Management" pages
+- **Phone Numbers**: Prefer direct extensions over main switchboard. Look for department-specific numbers
+- **Email Addresses**: Look for patterns like firstname.lastname@org.org, director@org.org, manager@org.org, coordinator@org.org, firstname@org.org
+- **Alternative Sources**: Check LinkedIn, professional directories, press releases, annual reports, 990 tax forms, government contracts, news articles, social media profiles
+- **Verification**: Cross-reference contact info across multiple sources (website, social media, government directories, news articles)
+- **Department Contacts**: Look for specific department heads (Emergency Services Director, Health Department Director, etc.)
+- **Secondary Contacts**: Find backup contacts like assistant directors, program managers, or department heads
+- **Recent Updates**: Check for recent staff changes, promotions, or organizational updates
+
+RESEARCH DEPTH REQUIREMENTS:
+- **Thorough Investigation**: Spend sufficient time researching each potential organization
+- **Multiple Search Terms**: Use variations of search terms (e.g., "overdose response", "substance abuse prevention", "harm reduction", "recovery services")
+- **Geographic Variations**: Search for organizations in nearby cities/towns within the county
+- **Service Variations**: Look for organizations that might not explicitly mention "overdose" but provide related services
+- **Recent Information**: Check for organizations that may have changed names, merged, or are newly established
+- **Partnership Networks**: Look for organizations mentioned in partnership announcements, grant awards, or collaborative programs
 
 CRITICAL - NO HALLUCINATION:
 - NEVER invent names, phone numbers, email addresses, or addresses
