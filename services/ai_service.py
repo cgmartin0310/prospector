@@ -154,9 +154,26 @@ class AIService:
             golden_examples_text = self._format_golden_examples(golden_examples) if golden_examples else ""
             
             prompt = f"""
-You are a professional researcher tasked with finding organizations in {county_name} County, {state_name} that match this specific criteria: "{search_query}"
+You are a professional researcher tasked with finding OVERDOSE RESPONSE TEAMS in {county_name} County, {state_name} that match this specific criteria: "{search_query}"
+
+IMPORTANT: We are specifically looking for OVERDOSE RESPONSE TEAMS, NOT treatment centers. These teams focus on post-overdose intervention and ongoing support.
 
 {golden_examples_text}
+
+OVERDOSE RESPONSE TEAM CRITERIA:
+**WHAT TO LOOK FOR:**
+- **Post-Overdose Intervention Teams**: Teams that respond AFTER an overdose occurs
+- **Peer Support Specialists**: Programs using peer support specialists for ongoing patient engagement
+- **Follow-up Programs**: Teams that maintain contact with patients over time
+- **Care Coordination**: Programs that connect patients to MAT, therapists, and other services
+- **Emergency Response Teams**: Teams that work with emergency services post-overdose
+- **Recovery Support Teams**: Teams focused on ongoing recovery support, not just initial treatment
+
+**WHAT TO EXCLUDE:**
+- **Treatment Centers**: Rehab facilities, detox centers, residential treatment programs
+- **Prevention Programs**: Programs that only focus on preventing overdoses (no post-overdose response)
+- **General Mental Health Services**: Unless they specifically have overdose response teams
+- **Substance Abuse Counseling**: Unless they specifically have post-overdose intervention programs
 
 SEARCH STRATEGY:
 1. **County-Specific Focus**: Search EXCLUSIVELY within {county_name} County boundaries. Only include organizations from other counties if they explicitly state they serve {county_name} County.
@@ -228,7 +245,7 @@ For each organization found, provide complete information in this exact JSON for
 If no organizations are found, return:
 {{
   "organizations": [],
-  "search_summary": "No organizations matching '{search_query}' were found in {county_name} County, {state_name} after thorough research of government agencies, non-profits, healthcare providers, and community organizations. Searched for: [list specific search terms used]. Sources checked: [list all sources consulted]. Research methodology: [describe your systematic approach and why no results were found]."
+  "search_summary": "No OVERDOSE RESPONSE TEAMS matching '{search_query}' were found in {county_name} County, {state_name} after thorough research of government agencies, non-profits, healthcare providers, and community organizations. Searched for: [list specific search terms used]. Sources checked: [list all sources consulted]. Research methodology: [describe your systematic approach and why no results were found]. Note: We specifically excluded treatment centers and prevention-only programs."
 }}
 
 Respond with ONLY valid JSON in the exact format specified above.
@@ -238,9 +255,26 @@ Respond with ONLY valid JSON in the exact format specified above.
             golden_examples_text = self._format_golden_examples(golden_examples) if golden_examples else ""
             
             prompt = f"""
-Research organizations in {county_name} County, {state_name} that match: "{search_query}"
+Research OVERDOSE RESPONSE TEAMS in {county_name} County, {state_name} that match: "{search_query}"
+
+IMPORTANT: We are specifically looking for OVERDOSE RESPONSE TEAMS, NOT treatment centers. These teams focus on post-overdose intervention and ongoing support.
 
 {golden_examples_text}
+
+OVERDOSE RESPONSE TEAM CRITERIA:
+**WHAT TO LOOK FOR:**
+- **Post-Overdose Intervention Teams**: Teams that respond AFTER an overdose occurs
+- **Peer Support Specialists**: Programs using peer support specialists for ongoing patient engagement
+- **Follow-up Programs**: Teams that maintain contact with patients over time
+- **Care Coordination**: Programs that connect patients to MAT, therapists, and other services
+- **Emergency Response Teams**: Teams that work with emergency services post-overdose
+- **Recovery Support Teams**: Teams focused on ongoing recovery support, not just initial treatment
+
+**WHAT TO EXCLUDE:**
+- **Treatment Centers**: Rehab facilities, detox centers, residential treatment programs
+- **Prevention Programs**: Programs that only focus on preventing overdoses (no post-overdose response)
+- **General Mental Health Services**: Unless they specifically have overdose response teams
+- **Substance Abuse Counseling**: Unless they specifically have post-overdose intervention programs
 
 SEARCH STRATEGY:
 1. **County-Specific Focus**: Search EXCLUSIVELY within {county_name} County boundaries
@@ -289,7 +323,7 @@ For each organization found, provide:
 - notes: Additional relevant information
 - confidence: Number between 0.0 and 1.0 indicating your confidence
 
-If no organizations are found, return an empty organizations array.
+If no OVERDOSE RESPONSE TEAMS are found, return an empty organizations array.
 
 Respond with ONLY valid JSON in this exact format:
 {{
