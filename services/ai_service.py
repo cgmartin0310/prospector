@@ -112,7 +112,7 @@ class AIService:
                         "messages": [
                             {
                                 "role": "system",
-                                "content": "You are a thorough researcher specializing in finding public health and social service organizations. You must respond with valid JSON format as specified in the user's request. Be factual and accurate - if you cannot find specific information, clearly state that rather than making assumptions."
+                                "content": "You are an assistant researching the web for prospects. You must respond with valid JSON format as specified in the user's request. Be factual and accurate - if you cannot find specific information, clearly state that rather than making assumptions."
                             },
                             {
                                 "role": "user",
@@ -136,7 +136,7 @@ class AIService:
                     messages=[
                         {
                             "role": "system",
-                            "content": "You are a thorough researcher specializing in finding public health and social service organizations. You must respond with valid JSON format as specified in the user's request. Be factual and accurate - if you cannot find specific information, clearly state that rather than making assumptions."
+                            "content": "You are an assistant researching the web for prospects. You must respond with valid JSON format as specified in the user's request. Be factual and accurate - if you cannot find specific information, clearly state that rather than making assumptions."
                         },
                         {
                             "role": "user",
@@ -161,16 +161,21 @@ class AIService:
             }
     
     def _call_grok_api(self, prompt: str, max_tokens: int = 4000) -> str:
-        """Call Grok API using the xAI API endpoint"""
+        """Call Grok API using the xAI chat endpoint"""
         try:
             headers = {
                 'Authorization': f'Bearer {self.grok_api_key}',
                 'Content-Type': 'application/json'
             }
             
+            # Use chat format with system and user messages
             data = {
                 'model': 'grok-beta',
                 'messages': [
+                    {
+                        'role': 'system',
+                        'content': 'You are an assistant researching the web for prospects.'
+                    },
                     {
                         'role': 'user',
                         'content': prompt
