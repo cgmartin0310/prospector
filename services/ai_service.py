@@ -13,6 +13,7 @@ except ImportError:
 import json
 import time
 import os
+import requests
 from config import Config
 from typing import Dict, List, Optional
 
@@ -21,7 +22,14 @@ class AIService:
         # Allow model to be configurable via environment variable or parameter
         self.model = model_name or os.environ.get('OPENAI_MODEL', 'gpt-4o')
         
-        if OpenAI:
+        # Check if we should use Grok
+        self.use_grok = os.environ.get('GROK_API_KEY') is not None
+        self.grok_api_key = os.environ.get('GROK_API_KEY')
+        
+        if self.use_grok:
+            print(f"Using Grok API for AI research")
+            self.client = None
+        elif OpenAI:
             # New OpenAI client (v1.0+) with explicit httpx client
             try:
                 import httpx
@@ -57,7 +65,13 @@ class AIService:
         prompt = self._build_research_prompt(county_name, state_name, search_query, golden_examples)
         
         try:
-            # Adjust parameters based on model
+            # Check if we should use Grok
+            if self.use_grok:
+                print(f"Using Grok API for research in {county_name} County")
+                raw_response = self._call_grok_api(prompt, max_tokens=4000)
+                return self._parse_ai_response(raw_response, county_name, state_name)
+            
+            # Adjust parameters based on model for OpenAI
             # Allow temperature override via environment variable
             custom_temperature = os.environ.get('TEMPERATURE')
             
@@ -145,6 +159,43 @@ class AIService:
                 "state": state_name,
                 "organizations": []
             }
+    
+    def _call_grok_api(self, prompt: str, max_tokens: int = 4000) -> str:
+        """Call Grok API using the xAI API endpoint"""
+        try:
+            headers = {
+                'Authorization': f'Bearer {self.grok_api_key}',
+                'Content-Type': 'application/json'
+            }
+            
+            data = {
+                'model': 'grok-beta',
+                'messages': [
+                    {
+                        'role': 'user',
+                        'content': prompt
+                    }
+                ],
+                'max_tokens': max_tokens,
+                'temperature': 0.2
+            }
+            
+            response = requests.post(
+                'https://api.x.ai/v1/chat/completions',
+                headers=headers,
+                json=data,
+                timeout=60
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result['choices'][0]['message']['content']
+            else:
+                raise Exception(f"Grok API error: {response.status_code} - {response.text}")
+                
+        except Exception as e:
+            print(f"Grok API call error: {str(e)}")
+            raise e
     
     def _build_research_prompt(self, county_name: str, state_name: str, search_query: str, golden_examples: List = None) -> str:
         """Build a detailed research prompt for the AI"""
