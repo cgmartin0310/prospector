@@ -158,30 +158,40 @@ You are a professional researcher tasked with finding organizations in {county_n
 
 {golden_examples_text}
 
-CRITICAL REQUIREMENTS:
-1. Focus EXCLUSIVELY on {county_name} County. Do not include organizations from other counties unless they explicitly serve {county_name} County.
-2. Be thorough and systematic in your research approach.
-3. Only include organizations you can verify exist.
-4. If no organizations are found, clearly state this.
-5. PRIORITY: Find the key personnel (director, manager, coordinator, head) of each organization and their direct contact information.
-6. Use the examples above as templates for what constitutes a high-quality, verified result.
+SEARCH STRATEGY:
+1. **County-Specific Focus**: Search EXCLUSIVELY within {county_name} County boundaries. Only include organizations from other counties if they explicitly state they serve {county_name} County.
+2. **Multi-Source Verification**: Check multiple sources for each organization (official websites, government directories, social media, news articles, etc.)
+3. **Contact Discovery Priority**: Focus on finding the key decision-maker (director, manager, coordinator, head, executive director) of each organization
+4. **Systematic Approach**: Search systematically through government agencies, non-profits, healthcare providers, and community organizations
 
-CRITICAL - NO MADE UP INFORMATION:
-- NEVER make up names, phone numbers, or email addresses
-- If you cannot find a specific person's name, use null
-- If you cannot find a specific phone number, use null  
-- If you cannot find a specific email address, use null
-- Only use information you can verify from official sources
-- Generic contact info (like general@organization.org) is acceptable if verified
-- When in doubt, use null rather than guessing
+CONTACT INFORMATION SEARCH TECHNIQUES:
+- **Key Personnel**: Look for "About Us", "Staff", "Leadership", "Contact" pages
+- **Phone Numbers**: Prefer direct extensions over main switchboard numbers
+- **Email Addresses**: Look for patterns like firstname.lastname@org.org or director@org.org
+- **Alternative Sources**: Check LinkedIn, professional directories, press releases, annual reports
+- **Verification**: Cross-reference contact info across multiple sources
 
-For each organization you find, provide complete information in this exact JSON format:
+CRITICAL - NO HALLUCINATION:
+- NEVER invent names, phone numbers, email addresses, or addresses
+- If information cannot be verified, use null
+- Only include information found in official, public sources
+- Generic contact info (general@org.org) is acceptable if verified
+- When uncertain, use null rather than guessing
+
+CONFIDENCE SCORING GUIDE:
+- **0.95-1.0**: Information verified across multiple authoritative sources
+- **0.85-0.94**: Information from official website or government directory
+- **0.75-0.84**: Information from reliable secondary source with partial verification
+- **0.60-0.74**: Information from single source but appears credible
+- **Below 0.60**: Use only if absolutely certain, otherwise use null
+
+For each organization found, provide complete information in this exact JSON format:
 
 {{
   "organizations": [
     {{
       "name": "Full organization name",
-      "description": "Detailed description of services and mission",
+      "description": "Detailed description of services, mission, and target population",
       "key_personnel": {{
         "name": "Real name of director/manager/coordinator (or null if not found)",
         "title": "Their specific title (or null if not found)",
@@ -194,19 +204,17 @@ For each organization you find, provide complete information in this exact JSON 
         "website": "Real organization website URL (or null if not found)"
       }},
       "address": "Real full physical address (or null if not found)",
-      "notes": "Any additional relevant information about the organization or key personnel (or null)",
+      "notes": "Additional relevant information about services, hours, eligibility, or key personnel (or null)",
       "confidence": 0.95
     }}
   ],
-  "search_summary": "Comprehensive summary of your research process, sources consulted, and findings"
+  "search_summary": "Comprehensive summary of your research process, sources consulted, verification methods, and findings. Include specific search terms and sources used."
 }}
-
-IMPORTANT: Focus on finding the specific person in charge (director, manager, coordinator, head) of each organization and their real, verified contact information. If you cannot find specific contact information, use null rather than making up fake information.
 
 If no organizations are found, return:
 {{
   "organizations": [],
-  "search_summary": "No organizations matching '{search_query}' were found in {county_name} County, {state_name} after thorough research."
+  "search_summary": "No organizations matching '{search_query}' were found in {county_name} County, {state_name} after thorough research of government agencies, non-profits, healthcare providers, and community organizations. Searched for: [list specific search terms used]."
 }}
 
 Respond with ONLY valid JSON in the exact format specified above.
@@ -220,20 +228,32 @@ Research organizations in {county_name} County, {state_name} that match: "{searc
 
 {golden_examples_text}
 
-IMPORTANT: Focus ONLY on {county_name} County. Do not include organizations from other counties unless they explicitly serve {county_name} County.
+SEARCH STRATEGY:
+1. **County-Specific Focus**: Search EXCLUSIVELY within {county_name} County boundaries
+2. **Multi-Source Verification**: Check multiple sources for each organization
+3. **Contact Discovery Priority**: Focus on finding key decision-makers (director, manager, coordinator, head)
+4. **Systematic Approach**: Search through government agencies, non-profits, healthcare providers, community organizations
 
-PRIORITY: Find the key personnel (director, manager, coordinator, head) of each organization and their direct contact information.
+CONTACT INFORMATION SEARCH TECHNIQUES:
+- **Key Personnel**: Look for "About Us", "Staff", "Leadership", "Contact" pages
+- **Phone Numbers**: Prefer direct extensions over main switchboard
+- **Email Addresses**: Look for patterns like firstname.lastname@org.org or director@org.org
+- **Alternative Sources**: Check LinkedIn, professional directories, press releases
+- **Verification**: Cross-reference contact info across multiple sources
 
-Use the examples above as templates for what constitutes a high-quality, verified result.
+CRITICAL - NO HALLUCINATION:
+- NEVER invent names, phone numbers, email addresses, or addresses
+- If information cannot be verified, use null
+- Only include information found in official, public sources
+- Generic contact info (general@org.org) is acceptable if verified
+- When uncertain, use null rather than guessing
 
-CRITICAL - NO MADE UP INFORMATION:
-- NEVER make up names, phone numbers, or email addresses
-- If you cannot find a specific person's name, use null
-- If you cannot find a specific phone number, use null  
-- If you cannot find a specific email address, use null
-- Only use information you can verify from official sources
-- Generic contact info (like general@organization.org) is acceptable if verified
-- When in doubt, use null rather than guessing
+CONFIDENCE SCORING GUIDE:
+- **0.95-1.0**: Information verified across multiple authoritative sources
+- **0.85-0.94**: Information from official website or government directory
+- **0.75-0.84**: Information from reliable secondary source with partial verification
+- **0.60-0.74**: Information from single source but appears credible
+- **Below 0.60**: Use only if absolutely certain, otherwise use null
 
 For each organization found, provide:
 - name: Organization name
@@ -268,7 +288,7 @@ Respond with ONLY valid JSON in this exact format:
       "confidence": 0.9
     }}
   ],
-  "search_summary": "Brief summary of search process and findings"
+  "search_summary": "Brief summary of search process, sources consulted, and findings"
 }}
 """
         return prompt
