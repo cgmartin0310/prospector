@@ -6,8 +6,6 @@ This service creates isolated chat sessions to prevent hallucination.
 import os
 import json
 import requests
-from xai_sdk import Client
-from xai_sdk.chat import user, system
 
 class AIService:
     def __init__(self):
@@ -16,16 +14,8 @@ class AIService:
         
         # Prioritize Grok if available
         if self.grok_api_key:
-            try:
-                self.grok_client = Client(
-                    api_key=self.grok_api_key,
-                    timeout=3600  # Longer timeout for reasoning models
-                )
-                self.use_grok = True
-                print("Grok AI service initialized successfully")
-            except Exception as e:
-                print(f"Failed to initialize Grok client: {e}")
-                self.use_grok = False
+            self.use_grok = True
+            print("Grok AI service initialized successfully")
         else:
             self.use_grok = False
             
@@ -33,18 +23,69 @@ class AIService:
             raise ValueError("Either OPENAI_API_KEY or GROK_API_KEY must be set")
 
     def _call_grok_api(self, prompt, max_tokens=4000):
-        """Call Grok API using xai_sdk"""
+        """Call Grok API using direct HTTP requests"""
         try:
-            chat = self.grok_client.chat.create(model="grok-4")
-            chat.append(system("You are an assistant researching the web for prospects."))
-            chat.append(user(prompt))
+            headers = {
+                'Authorization': f'Bearer {self.grok_api_key}',
+                'Content-Type': 'application/json'
+            }
             
-            response = chat.sample()
-            return response.content
+            # Use chat format with system and user messages
+            data = {
+                'model': 'grok-4',
+                'messages': [
+                    {
+                        'role': 'system',
+                        'content': 'You are an assistant researching the web for prospects.'
+                    },
+                    {
+                        'role': 'user',
+                        'content': prompt
+                    }
+                ],
+                'max_tokens': max_tokens
+            }
             
+            print(f"Calling Grok API with model: grok-4")
+            print(f"API Key (first 10 chars): {self.grok_api_key[:10]}...")
+            print(f"Request data: {json.dumps(data, indent=2)}")
+            
+            # Try the xAI chat endpoint
+            response = requests.post(
+                'https://api.x.ai/v1/chat/completions',
+                headers=headers,
+                json=data,
+                timeout=60
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result['choices'][0]['message']['content']
+            elif response.status_code == 404:
+                # Try alternative endpoint
+                print("Trying alternative Grok endpoint...")
+                alt_response = requests.post(
+                    'https://api.x.ai/v1/completions',
+                    headers=headers,
+                    json={
+                        'model': 'grok-4',
+                        'prompt': f"You are an assistant researching the web for prospects.\n\nUser: {prompt}\n\nAssistant:",
+                        'max_tokens': max_tokens
+                    },
+                    timeout=60
+                )
+                
+                if alt_response.status_code == 200:
+                    result = alt_response.json()
+                    return result['choices'][0]['text']
+                else:
+                    raise Exception(f"Alternative Grok API error: {alt_response.status_code} - {alt_response.text}")
+            else:
+                raise Exception(f"Grok API error: {response.status_code} - {response.text}")
+                
         except Exception as e:
-            print(f"Grok API error: {e}")
-            raise Exception(f"Grok API error: {str(e)}")
+            print(f"Grok API call error: {str(e)}")
+            raise e
 
     def _call_openai_api(self, prompt, max_tokens=4000):
         """Call OpenAI API"""
