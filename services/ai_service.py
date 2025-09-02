@@ -65,8 +65,42 @@ class AIService:
     def research_county(self, county_name, state_name, search_query, max_tokens=4000):
         """Research a county for overdose response teams"""
         
-        # Simple, direct prompt using only the user's search query
-        prompt = f"Research this in {county_name} County, {state_name}: {search_query}"
+        # Simple prompt with JSON formatting requirement
+        prompt = f"""Research this in {county_name} County, {state_name}: {search_query}
+
+Please return your findings in this exact JSON format:
+{{
+    "organization_name": "Name of the organization or 'No organizations found'",
+    "description": "Brief description of services",
+    "key_personnel_name": "Name of key contact person",
+    "key_personnel_title": "Title/role of key contact person", 
+    "key_personnel_phone": "Phone number for key contact person",
+    "key_personnel_email": "Email for key contact person",
+    "contact_info": "General contact information",
+    "address": "Physical address of the organization",
+    "additional_notes": "Additional relevant information",
+    "confidence_score": 0.85,
+    "source_urls": ["url1", "url2"],
+    "ai_response_raw": "Full AI response text",
+    "search_summary": "Summary of search strategy and findings"
+}}
+
+If no organizations are found, return:
+{{
+    "organization_name": "No organizations found",
+    "description": "No organizations found in {county_name}, {state_name}",
+    "key_personnel_name": "",
+    "key_personnel_title": "",
+    "key_personnel_phone": "",
+    "key_personnel_email": "",
+    "contact_info": "",
+    "address": "",
+    "additional_notes": "",
+    "confidence_score": 0.9,
+    "source_urls": [],
+    "ai_response_raw": "Search completed. No organizations found.",
+    "search_summary": "Search completed for {county_name}, {state_name}."
+}}"""
 
         try:
             print("Using Grok AI for research...")
