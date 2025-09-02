@@ -62,7 +62,7 @@ class AIService:
             print(f"Grok API call error: {str(e)}")
             raise e
 
-    def research_county(self, county_name, state_name, search_query):
+    def research_county(self, county_name, state_name, search_query, max_tokens=4000):
         """Research a county for overdose response teams"""
         
         prompt = f"""
