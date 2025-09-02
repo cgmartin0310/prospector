@@ -170,7 +170,7 @@ class AIService:
             
             # Use chat format with system and user messages
             data = {
-                'model': 'grok-beta',
+                'model': 'grok-1',  # Updated model name
                 'messages': [
                     {
                         'role': 'system',
@@ -185,6 +185,11 @@ class AIService:
                 'temperature': 0.2
             }
             
+            print(f"Calling Grok API with model: grok-1")
+            print(f"API Key (first 10 chars): {self.grok_api_key[:10]}...")
+            print(f"Request data: {json.dumps(data, indent=2)}")
+            
+            # Try the correct xAI endpoint
             response = requests.post(
                 'https://api.x.ai/v1/chat/completions',
                 headers=headers,
@@ -195,6 +200,26 @@ class AIService:
             if response.status_code == 200:
                 result = response.json()
                 return result['choices'][0]['message']['content']
+            elif response.status_code == 404:
+                # Try alternative endpoint
+                print("Trying alternative Grok endpoint...")
+                alt_response = requests.post(
+                    'https://api.x.ai/v1/completions',
+                    headers=headers,
+                    json={
+                        'model': 'grok-1',
+                        'prompt': f"You are an assistant researching the web for prospects.\n\nUser: {prompt}\n\nAssistant:",
+                        'max_tokens': max_tokens,
+                        'temperature': 0.2
+                    },
+                    timeout=60
+                )
+                
+                if alt_response.status_code == 200:
+                    result = alt_response.json()
+                    return result['choices'][0]['text']
+                else:
+                    raise Exception(f"Alternative Grok API error: {alt_response.status_code} - {alt_response.text}")
             else:
                 raise Exception(f"Grok API error: {response.status_code} - {response.text}")
                 
