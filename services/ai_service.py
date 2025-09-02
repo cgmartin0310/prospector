@@ -3,593 +3,200 @@ AI service for conducting research in each county.
 This service creates isolated chat sessions to prevent hallucination.
 """
 
-try:
-    from openai import OpenAI
-except ImportError:
-    # Fallback for older openai package versions
-    import openai
-    OpenAI = None
-
-import json
-import time
 import os
+import json
 import requests
-from config import Config
-from typing import Dict, List, Optional
+from xai_sdk import Client
+from xai_sdk.chat import user, system
 
 class AIService:
-    def __init__(self, model_name: str = None):
-        # Allow model to be configurable via environment variable or parameter
-        self.model = model_name or os.environ.get('OPENAI_MODEL', 'gpt-4o')
+    def __init__(self):
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        self.grok_api_key = os.getenv('GROK_API_KEY')
         
-        # Check if we should use Grok
-        self.use_grok = os.environ.get('GROK_API_KEY') is not None
-        self.grok_api_key = os.environ.get('GROK_API_KEY')
-        
-        if self.use_grok:
-            print(f"Using Grok API for AI research")
-            self.client = None
-        elif OpenAI:
-            # New OpenAI client (v1.0+) with explicit httpx client
+        # Prioritize Grok if available
+        if self.grok_api_key:
             try:
-                import httpx
-                # Create httpx client without problematic parameters
-                http_client = httpx.Client(timeout=30.0)
-                self.client = OpenAI(
-                    api_key=Config.OPENAI_API_KEY,
-                    http_client=http_client
+                self.grok_client = Client(
+                    api_key=self.grok_api_key,
+                    timeout=3600  # Longer timeout for reasoning models
                 )
+                self.use_grok = True
+                print("Grok AI service initialized successfully")
             except Exception as e:
-                print(f"OpenAI client initialization error: {e}")
-                # Fallback to legacy API if available
-                if 'openai' in globals():
-                    openai.api_key = Config.OPENAI_API_KEY
-                    self.client = None
-                else:
-                    raise e
+                print(f"Failed to initialize Grok client: {e}")
+                self.use_grok = False
         else:
-            # Legacy OpenAI API
-            openai.api_key = Config.OPENAI_API_KEY
-            self.client = None
-    
-    def research_county(self, county_name: str, state_name: str, search_query: str) -> Dict:
-        """
-        Research a specific county for organizations matching the search query.
-        Each call creates a fresh conversation to prevent hallucination.
-        Uses Golden Dataset examples to improve accuracy.
-        """
-        
-        # Get golden examples to improve the search
-        golden_examples = self._get_golden_examples(county_name, state_name, search_query)
-        
-        prompt = self._build_research_prompt(county_name, state_name, search_query, golden_examples)
-        
+            self.use_grok = False
+            
+        if not self.openai_api_key and not self.grok_api_key:
+            raise ValueError("Either OPENAI_API_KEY or GROK_API_KEY must be set")
+
+    def _call_grok_api(self, prompt, max_tokens=4000):
+        """Call Grok API using xai_sdk"""
         try:
-            # Check if we should use Grok
-            if self.use_grok:
-                print(f"Using Grok API for research in {county_name} County")
-                raw_response = self._call_grok_api(prompt, max_tokens=4000)
-                return self._parse_ai_response(raw_response, county_name, state_name)
+            chat = self.grok_client.chat.create(model="grok-4")
+            chat.append(system("You are an assistant researching the web for prospects."))
+            chat.append(user(prompt))
             
-            # Adjust parameters based on model for OpenAI
-            # Allow temperature override via environment variable
-            custom_temperature = os.environ.get('TEMPERATURE')
-            
-            if 'gpt-5' in self.model:
-                # GPT-5 uses responses API - no temperature parameter available
-                max_tokens = 6000  # GPT-5 can handle more tokens
-                use_responses_api = True  # Use the new responses API for GPT-5
-                temperature = None  # Not used for GPT-5
-            elif 'gpt-4o' in self.model:
-                temperature = float(custom_temperature) if custom_temperature else 0.2  # Slightly increased for better results
-                max_tokens = 4000
-                use_responses_api = False
-                supports_json_format = True
-            elif 'gpt-4' in self.model:
-                temperature = float(custom_temperature) if custom_temperature else 0.3
-                max_tokens = 2000
-                use_responses_api = False
-                supports_json_format = False  # GPT-4 doesn't support response_format
-            else:
-                temperature = float(custom_temperature) if custom_temperature else 0.3
-                max_tokens = 2000
-                use_responses_api = False
-                supports_json_format = False
-            
-            if self.client:
-                if use_responses_api and 'gpt-5' in self.model:
-                    # Use the new responses API for GPT-5 (no temperature parameter)
-                    response = self.client.responses.create(
-                        model=self.model,
-                        input=prompt,
-                        max_tokens=max_tokens
-                    )
-                    raw_response = response.output_text
-                else:
-                    # Use chat completions API for other models
-                    response_params = {
-                        "model": self.model,
-                        "messages": [
-                            {
-                                "role": "system",
-                                "content": "You are an assistant researching the web for prospects. You must respond with valid JSON format as specified in the user's request. Be factual and accurate - if you cannot find specific information, clearly state that rather than making assumptions."
-                            },
-                            {
-                                "role": "user",
-                                "content": prompt
-                            }
-                        ],
-                        "temperature": temperature,
-                        "max_tokens": max_tokens
-                    }
-                    
-                    # Only add response_format for models that support it
-                    if supports_json_format:
-                        response_params["response_format"] = {"type": "json_object"}
-                    
-                    response = self.client.chat.completions.create(**response_params)
-                    raw_response = response.choices[0].message.content
-            else:
-                # Legacy OpenAI API
-                response = openai.ChatCompletion.create(
-                    model=self.model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are an assistant researching the web for prospects. You must respond with valid JSON format as specified in the user's request. Be factual and accurate - if you cannot find specific information, clearly state that rather than making assumptions."
-                        },
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ],
-                    temperature=temperature,
-                    max_tokens=max_tokens
-                )
-                raw_response = response.choices[0].message.content
-            
-            return self._parse_ai_response(raw_response, county_name, state_name)
+            response = chat.sample()
+            return response.content
             
         except Exception as e:
-            print(f"AI research error for {county_name}, {state_name}: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e),
-                "county": county_name,
-                "state": state_name,
-                "organizations": []
-            }
-    
-    def _call_grok_api(self, prompt: str, max_tokens: int = 4000) -> str:
-        """Call Grok API using the xAI chat endpoint"""
-        try:
-            headers = {
-                'Authorization': f'Bearer {self.grok_api_key}',
-                'Content-Type': 'application/json'
-            }
+            print(f"Grok API error: {e}")
+            raise Exception(f"Grok API error: {str(e)}")
+
+    def _call_openai_api(self, prompt, max_tokens=4000):
+        """Call OpenAI API"""
+        if not self.openai_api_key:
+            raise Exception("OpenAI API key not available")
             
-            # Use chat format with system and user messages
-            data = {
-                'model': 'grok-1',  # Updated model name
-                'messages': [
-                    {
-                        'role': 'system',
-                        'content': 'You are an assistant researching the web for prospects.'
-                    },
-                    {
-                        'role': 'user',
-                        'content': prompt
-                    }
-                ],
-                'max_tokens': max_tokens,
-                'temperature': 0.2
-            }
-            
-            print(f"Calling Grok API with model: grok-1")
-            print(f"API Key (first 10 chars): {self.grok_api_key[:10]}...")
-            print(f"Request data: {json.dumps(data, indent=2)}")
-            
-            # Try the correct xAI endpoint
-            response = requests.post(
-                'https://api.x.ai/v1/chat/completions',
-                headers=headers,
-                json=data,
-                timeout=60
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                return result['choices'][0]['message']['content']
-            elif response.status_code == 404:
-                # Try alternative endpoint
-                print("Trying alternative Grok endpoint...")
-                alt_response = requests.post(
-                    'https://api.x.ai/v1/completions',
-                    headers=headers,
-                    json={
-                        'model': 'grok-1',
-                        'prompt': f"You are an assistant researching the web for prospects.\n\nUser: {prompt}\n\nAssistant:",
-                        'max_tokens': max_tokens,
-                        'temperature': 0.2
-                    },
-                    timeout=60
-                )
-                
-                if alt_response.status_code == 200:
-                    result = alt_response.json()
-                    return result['choices'][0]['text']
-                else:
-                    raise Exception(f"Alternative Grok API error: {alt_response.status_code} - {alt_response.text}")
-            else:
-                raise Exception(f"Grok API error: {response.status_code} - {response.text}")
-                
-        except Exception as e:
-            print(f"Grok API call error: {str(e)}")
-            raise e
-    
-    def _build_research_prompt(self, county_name: str, state_name: str, search_query: str, golden_examples: List = None) -> str:
-        """Build a detailed research prompt for the AI"""
-        
-        if 'gpt-5' in self.model:
-            # GPT-5 specific prompt - more detailed and structured
-            golden_examples_text = self._format_golden_examples(golden_examples) if golden_examples else ""
-            
-            prompt = f"""
-You are a professional researcher tasked with finding OVERDOSE RESPONSE TEAMS in {county_name} County, {state_name} that match this specific criteria: "{search_query}"
-
-IMPORTANT: We are specifically looking for OVERDOSE RESPONSE TEAMS, NOT treatment centers. These teams focus on post-overdose intervention and ongoing support.
-
-{golden_examples_text}
-
-OVERDOSE RESPONSE TEAM CRITERIA:
-**WHAT TO LOOK FOR:**
-- **Post-Overdose Intervention Teams**: Teams that respond AFTER an overdose occurs
-- **Peer Support Specialists**: Programs using peer support specialists for ongoing patient engagement
-- **Follow-up Programs**: Teams that maintain contact with patients over time
-- **Care Coordination**: Programs that connect patients to MAT, therapists, and other services
-- **Emergency Response Teams**: Teams that work with emergency services post-overdose
-- **Recovery Support Teams**: Teams focused on ongoing recovery support, not just initial treatment
-
-**WHAT TO EXCLUDE:**
-- **Treatment Centers**: Rehab facilities, detox centers, residential treatment programs
-- **Prevention Programs**: Programs that only focus on preventing overdoses (no post-overdose response)
-- **General Mental Health Services**: Unless they specifically have overdose response teams
-- **Substance Abuse Counseling**: Unless they specifically have post-overdose intervention programs
-
-SEARCH STRATEGY:
-1. **County-Specific Focus**: Search EXCLUSIVELY within {county_name} County boundaries. Only include organizations from other counties if they explicitly state they serve {county_name} County.
-2. **Multi-Source Verification**: Check multiple sources for each organization (official websites, government directories, social media, news articles, etc.)
-3. **Contact Discovery Priority**: Focus on finding the key decision-maker (director, manager, coordinator, head, executive director) of each organization
-4. **Systematic Approach**: Search systematically through government agencies, non-profits, healthcare providers, and community organizations
-5. **Comprehensive Coverage**: Search through ALL potential organization types: government agencies, health departments, hospitals, clinics, non-profits, community centers, faith-based organizations, educational institutions, law enforcement, emergency services, and private healthcare providers
-6. **Geographic Verification**: Verify organizations are physically located in or serve {county_name} County specifically
-7. **Service Overlap**: Look for organizations that might serve multiple counties but have a presence in {county_name} County
-
-CONTACT INFORMATION SEARCH TECHNIQUES:
-- **Key Personnel**: Look for "About Us", "Staff", "Leadership", "Contact", "Team", "Board of Directors", "Management" pages
-- **Phone Numbers**: Prefer direct extensions over main switchboard numbers. Look for department-specific numbers
-- **Email Addresses**: Look for patterns like firstname.lastname@org.org, director@org.org, manager@org.org, coordinator@org.org, firstname@org.org
-- **Alternative Sources**: Check LinkedIn, professional directories, press releases, annual reports, 990 tax forms, government contracts, news articles, social media profiles
-- **Verification**: Cross-reference contact info across multiple sources (website, social media, government directories, news articles)
-- **Department Contacts**: Look for specific department heads (Emergency Services Director, Health Department Director, etc.)
-- **Secondary Contacts**: Find backup contacts like assistant directors, program managers, or department heads
-- **Recent Updates**: Check for recent staff changes, promotions, or organizational updates
-
-RESEARCH DEPTH REQUIREMENTS:
-- **Thorough Investigation**: Spend sufficient time researching each potential organization
-- **Multiple Search Terms**: Use variations of search terms (e.g., "overdose response", "substance abuse prevention", "harm reduction", "recovery services")
-- **Geographic Variations**: Search for organizations in nearby cities/towns within the county
-- **Service Variations**: Look for organizations that might not explicitly mention "overdose" but provide related services
-- **Recent Information**: Check for organizations that may have changed names, merged, or are newly established
-- **Partnership Networks**: Look for organizations mentioned in partnership announcements, grant awards, or collaborative programs
-
-CRITICAL - NO HALLUCINATION:
-- NEVER invent names, phone numbers, email addresses, or addresses
-- If information cannot be verified, use null
-- Only include information found in official, public sources
-- Generic contact info (general@org.org) is acceptable if verified
-- When uncertain, use null rather than guessing
-
-CONFIDENCE SCORING GUIDE:
-- **0.95-1.0**: Information verified across multiple authoritative sources
-- **0.85-0.94**: Information from official website or government directory
-- **0.75-0.84**: Information from reliable secondary source with partial verification
-- **0.60-0.74**: Information from single source but appears credible
-- **Below 0.60**: Use only if absolutely certain, otherwise use null
-
-For each organization found, provide complete information in this exact JSON format:
-
-{{
-  "organizations": [
-    {{
-      "name": "Full organization name",
-      "description": "Detailed description of services, mission, target population, and specific programs offered",
-      "key_personnel": {{
-        "name": "Real name of director/manager/coordinator (or null if not found)",
-        "title": "Their specific title (or null if not found)",
-        "phone": "Real direct phone number (or null if not found)",
-        "email": "Real direct email address (or null if not found)"
-      }},
-      "general_contact": {{
-        "phone": "Real general organization phone (or null if not found)",
-        "email": "Real general organization email (or null if not found)", 
-        "website": "Real organization website URL (or null if not found)"
-      }},
-      "address": "Real full physical address (or null if not found)",
-      "notes": "Additional relevant information about services, hours, eligibility, funding sources, partnerships, recent news, or key personnel (or null)",
-      "confidence": 0.95
-    }}
-  ],
-  "search_summary": "Comprehensive summary of your research process, sources consulted, verification methods, and findings. Include specific search terms used, all sources checked (websites, directories, social media, news, etc.), verification steps taken, and any challenges encountered. Be thorough in documenting your research methodology."
-}}
-
-If no organizations are found, return:
-{{
-  "organizations": [],
-  "search_summary": "No OVERDOSE RESPONSE TEAMS matching '{search_query}' were found in {county_name} County, {state_name} after thorough research of government agencies, non-profits, healthcare providers, and community organizations. Searched for: [list specific search terms used]. Sources checked: [list all sources consulted]. Research methodology: [describe your systematic approach and why no results were found]. Note: We specifically excluded treatment centers and prevention-only programs."
-}}
-
-Respond with ONLY valid JSON in the exact format specified above.
-"""
-        else:
-            # Standard prompt for GPT-4o and other models
-            golden_examples_text = self._format_golden_examples(golden_examples) if golden_examples else ""
-            
-            prompt = f"""
-Research OVERDOSE RESPONSE TEAMS in {county_name} County, {state_name} that match: "{search_query}"
-
-IMPORTANT: We are specifically looking for OVERDOSE RESPONSE TEAMS, NOT treatment centers. These teams focus on post-overdose intervention and ongoing support.
-
-{golden_examples_text}
-
-OVERDOSE RESPONSE TEAM CRITERIA:
-**WHAT TO LOOK FOR:**
-- **Post-Overdose Intervention Teams**: Teams that respond AFTER an overdose occurs
-- **Peer Support Specialists**: Programs using peer support specialists for ongoing patient engagement
-- **Follow-up Programs**: Teams that maintain contact with patients over time
-- **Care Coordination**: Programs that connect patients to MAT, therapists, and other services
-- **Emergency Response Teams**: Teams that work with emergency services post-overdose
-- **Recovery Support Teams**: Teams focused on ongoing recovery support, not just initial treatment
-
-**WHAT TO EXCLUDE:**
-- **Treatment Centers**: Rehab facilities, detox centers, residential treatment programs
-- **Prevention Programs**: Programs that only focus on preventing overdoses (no post-overdose response)
-- **General Mental Health Services**: Unless they specifically have overdose response teams
-- **Substance Abuse Counseling**: Unless they specifically have post-overdose intervention programs
-
-SEARCH STRATEGY:
-1. **County-Specific Focus**: Search EXCLUSIVELY within {county_name} County boundaries
-2. **Multi-Source Verification**: Check multiple sources for each organization
-3. **Contact Discovery Priority**: Focus on finding key decision-makers (director, manager, coordinator, head)
-4. **Systematic Approach**: Search through government agencies, non-profits, healthcare providers, community organizations
-
-CONTACT INFORMATION SEARCH TECHNIQUES:
-- **Key Personnel**: Look for "About Us", "Staff", "Leadership", "Contact", "Team", "Board of Directors", "Management" pages
-- **Phone Numbers**: Prefer direct extensions over main switchboard. Look for department-specific numbers
-- **Email Addresses**: Look for patterns like firstname.lastname@org.org, director@org.org, manager@org.org, coordinator@org.org, firstname@org.org
-- **Alternative Sources**: Check LinkedIn, professional directories, press releases, annual reports, 990 tax forms, government contracts, news articles, social media profiles
-- **Verification**: Cross-reference contact info across multiple sources (website, social media, government directories, news articles)
-- **Department Contacts**: Look for specific department heads (Emergency Services Director, Health Department Director, etc.)
-- **Secondary Contacts**: Find backup contacts like assistant directors, program managers, or department heads
-- **Recent Updates**: Check for recent staff changes, promotions, or organizational updates
-
-RESEARCH DEPTH REQUIREMENTS:
-- **Thorough Investigation**: Spend sufficient time researching each potential organization
-- **Multiple Search Terms**: Use variations of search terms (e.g., "overdose response", "substance abuse prevention", "harm reduction", "recovery services")
-- **Geographic Variations**: Search for organizations in nearby cities/towns within the county
-- **Service Variations**: Look for organizations that might not explicitly mention "overdose" but provide related services
-- **Recent Information**: Check for organizations that may have changed names, merged, or are newly established
-- **Partnership Networks**: Look for organizations mentioned in partnership announcements, grant awards, or collaborative programs
-
-CRITICAL - NO HALLUCINATION:
-- NEVER invent names, phone numbers, email addresses, or addresses
-- If information cannot be verified, use null
-- Only include information found in official, public sources
-- Generic contact info (general@org.org) is acceptable if verified
-- When uncertain, use null rather than guessing
-
-CONFIDENCE SCORING GUIDE:
-- **0.95-1.0**: Information verified across multiple authoritative sources
-- **0.85-0.94**: Information from official website or government directory
-- **0.75-0.84**: Information from reliable secondary source with partial verification
-- **0.60-0.74**: Information from single source but appears credible
-- **Below 0.60**: Use only if absolutely certain, otherwise use null
-
-For each organization found, provide:
-- name: Organization name
-- description: Brief description of services
-- key_personnel: Object with name, title, phone, email of the person in charge (use null if not found)
-- general_contact: Object with general organization phone, email, website (use null if not found)
-- address: Physical address (use null if not available)
-- notes: Additional relevant information
-- confidence: Number between 0.0 and 1.0 indicating your confidence
-
-If no OVERDOSE RESPONSE TEAMS are found, return an empty organizations array.
-
-Respond with ONLY valid JSON in this exact format:
-{{
-  "organizations": [
-    {{
-      "name": "Organization Name",
-      "description": "What they do",
-      "key_personnel": {{
-        "name": "Real name of director/manager/coordinator (or null if not found)",
-        "title": "Their title (or null if not found)",
-        "phone": "Real direct phone number (or null if not found)",
-        "email": "Real direct email address (or null if not found)"
-      }},
-      "general_contact": {{
-        "phone": "Real general organization phone (or null if not found)",
-        "email": "Real general organization email (or null if not found)",
-        "website": "Real organization website (or null if not found)"
-      }},
-      "address": "Real address (or null if not found)",
-      "notes": "Additional info (or null if not found)",
-      "confidence": 0.9
-    }}
-  ],
-  "search_summary": "Brief summary of search process, sources consulted, and findings"
-}}
-"""
-        return prompt
-    
-    def _get_golden_examples(self, county_name: str, state_name: str, search_query: str) -> List[Dict]:
-        """
-        Get relevant golden examples to improve AI search accuracy.
-        Returns examples from similar counties/states and matching search categories.
-        """
-        try:
-            # Import here to avoid circular imports
-            from models import GoldenResult, County, State
-            
-            # Get golden examples from the same state first
-            state_examples = GoldenResult.query.join(County).join(State).filter(
-                State.name == state_name,
-                GoldenResult.search_category == "overdose_response"
-            ).limit(3).all()
-            
-            # If not enough state examples, get from similar search categories
-            if len(state_examples) < 3:
-                category_examples = GoldenResult.query.filter(
-                    GoldenResult.search_category == "overdose_response"
-                ).limit(5 - len(state_examples)).all()
-                
-                # Combine and remove duplicates
-                all_examples = list(state_examples) + list(category_examples)
-                unique_examples = []
-                seen_names = set()
-                
-                for example in all_examples:
-                    if example.organization_name not in seen_names:
-                        unique_examples.append(example)
-                        seen_names.add(example.organization_name)
-                        if len(unique_examples) >= 5:
-                            break
-                
-                return unique_examples
-            
-            return list(state_examples)
-            
-        except Exception as e:
-            print(f"Error getting golden examples: {e}")
-            return []
-    
-    def _format_golden_examples(self, golden_examples: List) -> str:
-        """
-        Format golden examples for inclusion in AI prompts.
-        """
-        if not golden_examples:
-            return ""
-        
-        examples_text = "\n\nEXAMPLES OF HIGH-QUALITY RESULTS:\n"
-        
-        for i, example in enumerate(golden_examples[:3], 1):  # Limit to 3 examples
-            examples_text += f"""
-Example {i}: {example.organization_name}
-- Location: {example.county.name} County, {example.state.name}
-- Key Personnel: {example.key_personnel_name or 'Not specified'} ({example.key_personnel_title or 'Not specified'})
-- Contact: {example.key_personnel_phone or 'Not specified'} | {example.key_personnel_email or 'Not specified'}
-- Services: {example.description or 'Not specified'}
-- Why this is a good example: Verified overdose response services with real contact information
-"""
-        
-        examples_text += "\nUse these examples as templates for what constitutes a high-quality, verified result."
-        return examples_text
-    
-    def _parse_ai_response(self, raw_response: str, county_name: str, state_name: str) -> Dict:
-        """Parse the AI response and extract structured data"""
-        
-        try:
-            # Try to extract JSON from the response
-            json_start = raw_response.find('{')
-            json_end = raw_response.rfind('}') + 1
-            
-            if json_start >= 0 and json_end > json_start:
-                json_str = raw_response[json_start:json_end]
-                parsed_data = json.loads(json_str)
-                
-                result = {
-                    "success": True,
-                    "county": county_name,
-                    "state": state_name,
-                    "organizations": parsed_data.get("organizations", []),
-                    "search_summary": parsed_data.get("search_summary", ""),
-                    "raw_response": raw_response
-                }
-                
-                # Add confidence scores if missing
-                for org in result["organizations"]:
-                    if "confidence" not in org:
-                        org["confidence"] = 0.7  # Default confidence
-                
-                return result
-            else:
-                # Fallback: try to parse as plain text
-                return self._parse_plain_text_response(raw_response, county_name, state_name)
-                
-        except json.JSONDecodeError:
-            # Fallback to plain text parsing
-            return self._parse_plain_text_response(raw_response, county_name, state_name)
-        except Exception as e:
-            return {
-                "success": False,
-                "error": f"Parsing error: {str(e)}",
-                "county": county_name,
-                "state": state_name,
-                "organizations": [],
-                "raw_response": raw_response
-            }
-    
-    def _parse_plain_text_response(self, raw_response: str, county_name: str, state_name: str) -> Dict:
-        """Fallback parser for plain text responses"""
-        
-        # Simple parsing logic for when JSON parsing fails
-        organizations = []
-        lines = raw_response.split('\n')
-        
-        current_org = {}
-        for line in lines:
-            line = line.strip()
-            if not line:
-                if current_org.get('name'):
-                    organizations.append(current_org)
-                    current_org = {}
-                continue
-            
-            # Try to identify organization names (often start with numbers or bullets)
-            if any(line.startswith(prefix) for prefix in ['1.', '2.', '3.', '4.', '5.', '-', '•']):
-                if current_org.get('name'):
-                    organizations.append(current_org)
-                
-                # Extract organization name
-                name = line
-                for prefix in ['1.', '2.', '3.', '4.', '5.', '-', '•', '*']:
-                    name = name.replace(prefix, '').strip()
-                
-                current_org = {
-                    'name': name,
-                    'description': '',
-                    'contact': {},
-                    'address': '',
-                    'notes': '',
-                    'confidence': 0.6
-                }
-            elif current_org.get('name'):
-                # Add to description or notes
-                if 'phone' in line.lower() or 'email' in line.lower() or 'website' in line.lower():
-                    current_org['notes'] += line + ' '
-                else:
-                    current_org['description'] += line + ' '
-        
-        # Add the last organization
-        if current_org.get('name'):
-            organizations.append(current_org)
-        
-        return {
-            "success": True,
-            "county": county_name,
-            "state": state_name,
-            "organizations": organizations,
-            "search_summary": f"Parsed {len(organizations)} organizations from plain text response",
-            "raw_response": raw_response
+        headers = {
+            'Authorization': f'Bearer {self.openai_api_key}',
+            'Content-Type': 'application/json'
         }
+        
+        data = {
+            'model': 'gpt-4o',
+            'messages': [
+                {'role': 'system', 'content': 'You are an assistant researching the web for prospects.'},
+                {'role': 'user', 'content': prompt}
+            ],
+            'max_tokens': max_tokens
+        }
+        
+        response = requests.post(
+            'https://api.openai.com/v1/chat/completions',
+            headers=headers,
+            json=data,
+            timeout=60
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result['choices'][0]['message']['content']
+        else:
+            raise Exception(f"OpenAI API error: {response.status_code} - {response.text}")
+
+    def research_county(self, county_name, state_name, search_query):
+        """Research a county for overdose response teams"""
+        
+        prompt = f"""
+OVERDOSE RESPONSE TEAMS RESEARCH
+
+IMPORTANT: We are specifically looking for OVERDOSE RESPONSE TEAMS, NOT treatment centers. These teams focus on post-overdose intervention and ongoing support.
+
+OVERDOSE RESPONSE TEAM CRITERIA:
+WHAT TO LOOK FOR:
+- Post-Overdose Intervention: Teams that respond to overdose incidents
+- Peer Support: Often involve peer support specialists or recovery coaches
+- Follow-up: Ongoing support and follow-up care
+- Care Coordination: Connecting patients with MAT, therapists, and other services
+- Emergency Response: Immediate response to overdose situations
+- Recovery Support: Long-term support for recovery
+
+WHAT TO EXCLUDE:
+- Treatment Centers: Inpatient/outpatient drug treatment facilities
+- Prevention Programs: Education and awareness programs
+- General Mental Health: General mental health services
+- Substance Abuse Counseling: General counseling services
+
+SEARCH STRATEGY:
+Comprehensive Coverage: Search for county-specific overdose response programs
+Geographic Verification: Ensure results are actually in {county_name}, {state_name}
+Service Overlap: Look for programs that may serve multiple counties
+
+CONTACT INFORMATION SEARCH TECHNIQUES:
+- Search county government websites for health departments
+- Look for public health initiatives and programs
+- Check for emergency response teams and protocols
+- Search for peer support programs and recovery services
+- Look for partnerships with hospitals and emergency services
+- Check for recent news articles about overdose response
+- Search for grant-funded programs and initiatives
+- Look for community health organizations
+- Check for 990 tax forms for non-profit organizations
+- Search for state health department programs serving this county
+
+RESEARCH DEPTH REQUIREMENTS:
+- Thorough investigation of each potential organization
+- Multiple search terms and variations
+- Geographic and service variations
+- Recent information (within last 2 years)
+- Partnership networks and collaborations
+
+COUNTY: {county_name}, {state_name}
+SEARCH QUERY: {search_query}
+
+Please research and provide detailed information about overdose response teams in this county. Focus on finding organizations that provide immediate post-overdose intervention and ongoing support, not treatment centers.
+
+Return your findings in this exact JSON format:
+{{
+    "organization_name": "Name of the organization or 'No organizations found'",
+    "description": "Detailed description of services and programs",
+    "key_personnel_name": "Name of key contact person",
+    "key_personnel_title": "Title/role of key contact person", 
+    "key_personnel_phone": "Phone number for key contact person",
+    "key_personnel_email": "Email for key contact person",
+    "contact_info": "General contact information",
+    "address": "Physical address of the organization",
+    "additional_notes": "Additional relevant information",
+    "confidence_score": 0.85,
+    "source_urls": ["url1", "url2"],
+    "ai_response_raw": "Full AI response text",
+    "search_summary": "Summary of search strategy and findings"
+}}
+
+If no organizations are found that meet the criteria, return:
+{{
+    "organization_name": "No organizations found",
+    "description": "No overdose response teams found in {county_name}, {state_name} that meet the specific criteria. We are looking for teams that provide post-overdose intervention and ongoing support, not treatment centers.",
+    "key_personnel_name": "",
+    "key_personnel_title": "",
+    "key_personnel_phone": "",
+    "key_personnel_email": "",
+    "contact_info": "",
+    "address": "",
+    "additional_notes": "No qualifying organizations found. This county may not have dedicated overdose response teams, or they may be organized differently (e.g., through state programs, regional partnerships, or integrated into emergency services).",
+    "confidence_score": 0.9,
+    "source_urls": [],
+    "ai_response_raw": "Search completed. No overdose response teams found that meet the specific criteria for post-overdose intervention and ongoing support.",
+    "search_summary": "Comprehensive search completed for {county_name}, {state_name}. Searched for overdose response teams, peer support programs, emergency response protocols, and public health initiatives. No organizations found that specifically provide post-overdose intervention and ongoing support services as defined in our criteria."
+}}
+"""
+
+        try:
+            if self.use_grok:
+                print("Using Grok AI for research...")
+                response = self._call_grok_api(prompt, max_tokens)
+            else:
+                print("Using OpenAI for research...")
+                response = self._call_openai_api(prompt, max_tokens)
+                
+            # Parse the response
+            try:
+                result = json.loads(response)
+                return result
+            except json.JSONDecodeError as e:
+                print(f"Failed to parse AI response as JSON: {e}")
+                print(f"Raw response: {response}")
+                # Return a fallback response
+                return {
+                    "organization_name": "Error parsing AI response",
+                    "description": f"Failed to parse AI response: {str(e)}",
+                    "key_personnel_name": "",
+                    "key_personnel_title": "",
+                    "key_personnel_phone": "",
+                    "key_personnel_email": "",
+                    "contact_info": "",
+                    "address": "",
+                    "additional_notes": f"AI response parsing error: {str(e)}",
+                    "confidence_score": 0.0,
+                    "source_urls": [],
+                    "ai_response_raw": response,
+                    "search_summary": "Error occurred while processing AI response"
+                }
+                
+        except Exception as e:
+            print(f"AI service error: {e}")
+            raise Exception(f"AI service error: {str(e)}")
