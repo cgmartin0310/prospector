@@ -9,18 +9,12 @@ import requests
 
 class AIService:
     def __init__(self):
-        self.openai_api_key = os.getenv('OPENAI_API_KEY')
         self.grok_api_key = os.getenv('GROK_API_KEY')
         
-        # Prioritize Grok if available
-        if self.grok_api_key:
-            self.use_grok = True
-            print("Grok AI service initialized successfully")
-        else:
-            self.use_grok = False
+        if not self.grok_api_key:
+            raise ValueError("GROK_API_KEY must be set")
             
-        if not self.openai_api_key and not self.grok_api_key:
-            raise ValueError("Either OPENAI_API_KEY or GROK_API_KEY must be set")
+        print("Grok AI service initialized successfully")
 
     def _call_grok_api(self, prompt, max_tokens=4000):
         """Call Grok API using direct HTTP requests"""
@@ -50,7 +44,7 @@ class AIService:
             print(f"API Key (first 10 chars): {self.grok_api_key[:10]}...")
             print(f"Request data: {json.dumps(data, indent=2)}")
             
-            # Try the xAI chat endpoint
+            # Call the xAI chat endpoint
             response = requests.post(
                 'https://api.x.ai/v1/chat/completions',
                 headers=headers,
@@ -61,63 +55,12 @@ class AIService:
             if response.status_code == 200:
                 result = response.json()
                 return result['choices'][0]['message']['content']
-            elif response.status_code == 404:
-                # Try alternative endpoint
-                print("Trying alternative Grok endpoint...")
-                alt_response = requests.post(
-                    'https://api.x.ai/v1/completions',
-                    headers=headers,
-                    json={
-                        'model': 'grok-4',
-                        'prompt': f"You are an assistant researching the web for prospects.\n\nUser: {prompt}\n\nAssistant:",
-                        'max_tokens': max_tokens
-                    },
-                    timeout=60
-                )
-                
-                if alt_response.status_code == 200:
-                    result = alt_response.json()
-                    return result['choices'][0]['text']
-                else:
-                    raise Exception(f"Alternative Grok API error: {alt_response.status_code} - {alt_response.text}")
             else:
                 raise Exception(f"Grok API error: {response.status_code} - {response.text}")
                 
         except Exception as e:
             print(f"Grok API call error: {str(e)}")
             raise e
-
-    def _call_openai_api(self, prompt, max_tokens=4000):
-        """Call OpenAI API"""
-        if not self.openai_api_key:
-            raise Exception("OpenAI API key not available")
-            
-        headers = {
-            'Authorization': f'Bearer {self.openai_api_key}',
-            'Content-Type': 'application/json'
-        }
-        
-        data = {
-            'model': 'gpt-4o',
-            'messages': [
-                {'role': 'system', 'content': 'You are an assistant researching the web for prospects.'},
-                {'role': 'user', 'content': prompt}
-            ],
-            'max_tokens': max_tokens
-        }
-        
-        response = requests.post(
-            'https://api.openai.com/v1/chat/completions',
-            headers=headers,
-            json=data,
-            timeout=60
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            return result['choices'][0]['message']['content']
-        else:
-            raise Exception(f"OpenAI API error: {response.status_code} - {response.text}")
 
     def research_county(self, county_name, state_name, search_query):
         """Research a county for overdose response teams"""
@@ -207,12 +150,8 @@ If no organizations are found that meet the criteria, return:
 """
 
         try:
-            if self.use_grok:
-                print("Using Grok AI for research...")
-                response = self._call_grok_api(prompt, max_tokens)
-            else:
-                print("Using OpenAI for research...")
-                response = self._call_openai_api(prompt, max_tokens)
+            print("Using Grok AI for research...")
+            response = self._call_grok_api(prompt, max_tokens)
                 
             # Parse the response
             try:
