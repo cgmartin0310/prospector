@@ -101,11 +101,13 @@ def start_search_form():
 @app.route('/start-search', methods=['POST'])
 def start_search():
     """Start a new prospecting job"""
-    search_query = request.form.get('search_query')
     state_id = request.form.get('state_id')
     
-    if not search_query or not state_id:
+    if not state_id:
         return jsonify({'error': 'Missing required fields'}), 400
+    
+    # Use default search query since we now have hardcoded research focus
+    search_query = "Research overdose response teams and their key contact information"
     
     # Create new job
     job = ProspectingJob(

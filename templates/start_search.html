@@ -1,25 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}Start New Search - Prospector{% endblock %}
+{% block title %}Start Overdose Response Team Research - Prospector{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0"><i class="fas fa-plus-circle text-primary"></i> Start New Prospecting Search</h4>
-            </div>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle text-primary"></i> Start New Overdose Response Team Research</h4>
+                </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('start_search') }}">
                     <div class="mb-4">
-                        <label for="search_query" class="form-label">
-                            <i class="fas fa-search"></i> What are you looking for?
-                        </label>
-                        <textarea class="form-control" id="search_query" name="search_query" 
-                                  rows="3" required 
-                                  placeholder="Describe the type of organizations you want to find (e.g., 'overdose response teams', 'opioid treatment centers', 'mental health crisis teams')">{{ request.form.search_query }}</textarea>
-                        <div class="form-text">
-                            Be specific about what you're looking for. The AI will search for organizations matching this description in every county.
+                        <div class="alert alert-info" role="alert">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Research Focus:</strong> This search will automatically research overdose response teams and their key contact information in every county of the selected state.
                         </div>
                     </div>
                     
@@ -81,8 +77,8 @@
                         <i class="fas fa-info-circle"></i>
                         <strong>What happens next:</strong>
                         <ul class="mb-0 mt-2">
-                            <li>The AI will research each county individually using fresh conversations</li>
-                            <li>This prevents hallucination and ensures comprehensive coverage</li>
+                            <li>The AI will research overdose response teams in each county individually</li>
+                            <li>Focus will be on finding official programs, QRTs, and similar overdose response initiatives</li>
                             <li>You can monitor progress in real-time</li>
                             <li>Results are saved as they're found</li>
                         </ul>
@@ -99,45 +95,6 @@
                 </form>
             </div>
         </div>
-        
-        <!-- Example Searches -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Example Searches</h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Public Health</h6>
-                        <ul class="list-unstyled">
-                            <li><button class="btn btn-link p-0 example-search" data-query="overdose response teams or opioid crisis response teams">• Overdose response teams</button></li>
-                            <li><button class="btn btn-link p-0 example-search" data-query="mental health crisis intervention teams">• Mental health crisis teams</button></li>
-                            <li><button class="btn btn-link p-0 example-search" data-query="substance abuse treatment centers">• Substance abuse treatment</button></li>
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Emergency Services</h6>
-                        <ul class="list-unstyled">
-                            <li><button class="btn btn-link p-0 example-search" data-query="emergency management agencies">• Emergency management</button></li>
-                            <li><button class="btn btn-link p-0 example-search" data-query="disaster response organizations">• Disaster response</button></li>
-                            <li><button class="btn btn-link p-0 example-search" data-query="community emergency response teams">• Community response teams</button></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle example search clicks
-    document.querySelectorAll('.example-search').forEach(button => {
-        button.addEventListener('click', function() {
-            const query = this.getAttribute('data-query');
-            document.getElementById('search_query').value = query;
-        });
-    });
-});
-</script>
 {% endblock %}
