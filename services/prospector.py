@@ -271,6 +271,7 @@ class ProspectorService:
             'additional_notes': research_result.get('additional_notes', ''),
             'confidence_score': research_result.get('confidence_score', 0.7),
             'ai_response_raw': research_result.get('ai_response_raw', ''),
+            'source_urls': research_result.get('source_urls', '[]'),
             'key_personnel_name': research_result.get('key_personnel_name', ''),
             'key_personnel_title': research_result.get('key_personnel_title', ''),
             'key_personnel_phone': research_result.get('key_personnel_phone', ''),

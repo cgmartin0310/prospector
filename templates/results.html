@@ -131,6 +131,25 @@
                                 {% endif %}
                             </td>
                             <td>
+                                {% if result.source_urls and result.source_urls != '[]' %}
+                                    {% set urls = result.source_urls|from_json %}
+                                    {% if urls and urls|length > 0 %}
+                                        {% for url in urls[:2] %}
+                                            <a href="{{ url }}" target="_blank" class="d-block text-break small">
+                                                <i class="fas fa-external-link-alt"></i> {{ url[:40] }}{% if url|length > 40 %}...{% endif %}
+                                            </a>
+                                        {% endfor %}
+                                        {% if urls|length > 2 %}
+                                            <small class="text-muted">+{{ urls|length - 2 }} more</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <em class="text-muted">No source URLs</em>
+                                    {% endif %}
+                                {% else %}
+                                    <em class="text-muted">No source URLs</em>
+                                {% endif %}
+                            </td>
+                            <td>
                                 <small class="text-muted">
                                     {{ result.created_at.strftime('%m/%d/%Y') }}
                                 </small>

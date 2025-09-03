@@ -186,6 +186,7 @@ def api_result_details(result_id):
         'address': result.address,
         'additional_notes': result.additional_notes,
         'confidence_score': result.confidence_score,
+        'source_urls': result.source_urls,
         'ai_response_raw': result.ai_response_raw,
         'created_at': result.created_at.isoformat(),
         'county_name': result.county.name,
