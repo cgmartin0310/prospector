@@ -105,10 +105,13 @@ If no organizations are found, return:
         try:
             print("Using Grok AI for research...")
             response = self._call_grok_api(prompt, max_tokens)
+            
+            print(f"Grok response received: {response[:500]}...")  # Show first 500 chars
                 
             # Parse the response
             try:
                 result = json.loads(response)
+                print(f"JSON parsing successful for {county_name}")
                 return result
             except json.JSONDecodeError as e:
                 print(f"Failed to parse AI response as JSON: {e}")
