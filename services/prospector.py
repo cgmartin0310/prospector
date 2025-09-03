@@ -169,7 +169,8 @@ class ProspectorService:
         """
         county_name = County.query.get(county_id).name
         
-        if not research_result.get('success', False):
+        # Check if this is an error response from the AI service
+        if research_result.get('organization_name') == 'Error parsing AI response':
             print(f"AI research failed for {county_name} County")
             # If AI research failed, save a record for progress tracking
             existing_result = SearchResult.query.filter_by(
@@ -180,9 +181,9 @@ class ProspectorService:
             if existing_result:
                 # Update existing record to indicate research failed
                 existing_result.organization_name = None
-                existing_result.description = f"Search failed: {research_result.get('error', 'Unknown error')}"
+                existing_result.description = f"Search failed: {research_result.get('description', 'Unknown error')}"
                 existing_result.confidence_score = 0.0
-                existing_result.ai_response_raw = research_result.get('raw_response', '')
+                existing_result.ai_response_raw = research_result.get('ai_response_raw', '')
                 # Clear key personnel fields
                 existing_result.key_personnel_name = ''
                 existing_result.key_personnel_title = ''
@@ -197,9 +198,9 @@ class ProspectorService:
                     job_id=job_id,
                     county_id=county_id,
                     organization_name=None,
-                    description=f"Search failed: {research_result.get('error', 'Unknown error')}",
+                    description=f"Search failed: {research_result.get('description', 'Unknown error')}",
                     confidence_score=0.0,
-                    ai_response_raw=research_result.get('raw_response', ''),
+                    ai_response_raw=research_result.get('ai_response_raw', ''),
                     key_personnel_name='',
                     key_personnel_title='',
                     key_personnel_phone='',
@@ -211,9 +212,8 @@ class ProspectorService:
                 print(f"Saved 'research failed' record for {county_name} County.")
             return
 
-        organizations = research_result.get('organizations', [])
-
-        if not organizations:
+        # Check if no organizations were found
+        if research_result.get('organization_name') == 'No organizations found':
             print(f"No organizations found for {county_name} County")
             # If AI research found no organizations, save a "no results" record for progress tracking
             existing_result = SearchResult.query.filter_by(
@@ -224,10 +224,10 @@ class ProspectorService:
             if existing_result:
                 # Update existing record to indicate no organizations found
                 existing_result.organization_name = None
-                existing_result.description = "No organizations found matching the search criteria"
+                existing_result.description = research_result.get('description', 'No organizations found')
                 existing_result.additional_notes = research_result.get('search_summary', '')
-                existing_result.confidence_score = 0.0
-                existing_result.ai_response_raw = research_result.get('raw_response', '')
+                existing_result.confidence_score = research_result.get('confidence_score', 0.0)
+                existing_result.ai_response_raw = research_result.get('ai_response_raw', '')
                 # Clear key personnel fields
                 existing_result.key_personnel_name = ''
                 existing_result.key_personnel_title = ''
@@ -242,10 +242,10 @@ class ProspectorService:
                     job_id=job_id,
                     county_id=county_id,
                     organization_name=None,
-                    description="No organizations found matching the search criteria",
+                    description=research_result.get('description', 'No organizations found'),
                     additional_notes=research_result.get('search_summary', ''),
-                    confidence_score=0.0,
-                    ai_response_raw=research_result.get('raw_response', ''),
+                    confidence_score=research_result.get('confidence_score', 0.0),
+                    ai_response_raw=research_result.get('ai_response_raw', ''),
                     key_personnel_name='',
                     key_personnel_title='',
                     key_personnel_phone='',
@@ -257,32 +257,25 @@ class ProspectorService:
                 print(f"Saved 'no results' record for {county_name} County.")
             return
 
-        # Find the organization with the highest confidence score
-        best_org = max(organizations, key=lambda org: org.get('confidence', 0.0))
-        print(f"Found {len(organizations)} organizations for {county_name} County, best confidence: {best_org.get('confidence', 0.0):.2f}")
-
-        # Convert general contact to JSON string for backward compatibility
-        contact_info = json.dumps(best_org.get('general_contact', {}))
+        # Organization was found - save the result
+        print(f"Found organization for {county_name} County: {research_result.get('organization_name')}")
 
         # Prepare new result data
         new_result_data = {
             'job_id': job_id,
             'county_id': county_id,
-            'organization_name': best_org.get('name', 'Unknown'),
-            'description': best_org.get('description', ''),
-            'contact_info': contact_info,
-            'address': best_org.get('address', ''),
-            'additional_notes': best_org.get('notes', ''),
-            'confidence_score': best_org.get('confidence', 0.7),
-            'ai_response_raw': research_result.get('raw_response', '')
+            'organization_name': research_result.get('organization_name', 'Unknown'),
+            'description': research_result.get('description', ''),
+            'contact_info': research_result.get('contact_info', ''),
+            'address': research_result.get('address', ''),
+            'additional_notes': research_result.get('additional_notes', ''),
+            'confidence_score': research_result.get('confidence_score', 0.7),
+            'ai_response_raw': research_result.get('ai_response_raw', ''),
+            'key_personnel_name': research_result.get('key_personnel_name', ''),
+            'key_personnel_title': research_result.get('key_personnel_title', ''),
+            'key_personnel_phone': research_result.get('key_personnel_phone', ''),
+            'key_personnel_email': research_result.get('key_personnel_email', '')
         }
-
-        # Handle key personnel information
-        key_personnel = best_org.get('key_personnel', {})
-        new_result_data['key_personnel_name'] = key_personnel.get('name', '')
-        new_result_data['key_personnel_title'] = key_personnel.get('title', '')
-        new_result_data['key_personnel_phone'] = key_personnel.get('phone', '')
-        new_result_data['key_personnel_email'] = key_personnel.get('email', '')
 
         existing_result = SearchResult.query.filter_by(
             job_id=job_id, 
