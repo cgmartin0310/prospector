@@ -30,7 +30,7 @@ class AIService:
                 'messages': [
                     {
                         'role': 'system',
-                        'content': 'You are an assistant researching the web for prospects.'
+                        'content': 'You are an analyst researching information about overdose response teams and best contact information for the head of the program. IMPORTANT: Do not make up or fabricate any results. If no organizations are found for a county, clearly state "No organizations found" rather than creating fictional information.'
                     },
                     {
                         'role': 'user',
@@ -49,7 +49,7 @@ class AIService:
                 'https://api.x.ai/v1/chat/completions',
                 headers=headers,
                 json=data,
-                timeout=60
+                timeout=120  # Increased from 60 to 120 seconds
             )
             
             if response.status_code == 200:
