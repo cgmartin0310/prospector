@@ -30,7 +30,7 @@ class AIService:
                 'messages': [
                     {
                         'role': 'system',
-                        'content': 'You are an analyst researching information about overdose response teams and best contact information for the head of the program. IMPORTANT: Do not make up or fabricate any results. If no organizations are found for a county, clearly state "No organizations found" rather than creating fictional information.'
+                        'content': 'You are an analyst researching information about overdose response teams and best contact information for the head of the program. IMPORTANT: Do not make up or fabricate any results. If no organizations are found for a county, clearly state "No organizations found" rather than creating fictional information.\n\nDefinition of overdose response teams (or equivalents): These programs, which may go by various names such as Overdose Response Teams, Post Overdose Response Teams (PORT), Quick Response Teams (QRT), Overdose Outreach Response Programs (OORP), or similar, typically focus on overdose prevention and response. Key services often include naloxone distribution, crisis intervention, peer support specialists, education, and follow-up care for individuals affected by substance use disorders. Use this description to identify equivalent programs even if the exact name differs.\n\nIf multiple potential organizations are identified, select only the single best one based on these criteria (in order of priority):\n1. Official county or state health department programs (e.g., .gov sites).\n2. Programs with the broadest overdose response services (e.g., naloxone distribution, crisis intervention, education).\n3. Most recent or actively maintained information.\n4. Highest visibility or endorsement (e.g., listed on national directories like SAMHSA).\n\nMention any notable alternatives briefly in \'additional_notes\' without full details. Use available tools such as web_search (for general queries), browse_page (to extract details from specific websites like county health departments), and x_keyword_search (for recent discussions on X/Twitter about local programs) to gather and verify information. Prioritize official sources. When searching, incorporate variations in program names and focus on key services from the definition above to broaden results (e.g., query for \'naloxone distribution programs {county_name} County\' or \'peer support overdose intervention {state_name}\').'
                     },
                     {
                         'role': 'user',
@@ -65,15 +65,14 @@ class AIService:
     def research_county(self, county_name, state_name, search_query, max_tokens=4000):
         """Research a county for overdose response teams"""
         
-        # Simple prompt with JSON formatting requirement
-        prompt = f"""Research this in {county_name} County, {state_name}: {search_query}
-
+        # Comprehensive prompt with hardcoded research focus
+        prompt = f"""Research overdose response teams and their key contact information in {county_name} County, {state_name}.
 Please return your findings in this exact JSON format:
 {{
     "organization_name": "Name of the organization or 'No organizations found'",
     "description": "Brief description of services",
     "key_personnel_name": "Name of key contact person",
-    "key_personnel_title": "Title/role of key contact person", 
+    "key_personnel_title": "Title/role of key contact person",
     "key_personnel_phone": "Phone number for key contact person",
     "key_personnel_email": "Email for key contact person",
     "contact_info": "General contact information",
