@@ -210,14 +210,7 @@
         background-color: #e8f5e8;
     }
     
-    .county-row.golden {
-        background-color: #fff3cd;
-        border-left: 4px solid #ffc107;
-    }
-    
-    .county-row.golden td {
-        border-color: #ffeaa7;
-    }
+
     
     .organization-name {
         font-weight: bold;
@@ -585,12 +578,8 @@ function displayCounties(counties) {
     counties.forEach(county => {
         const hasResult = county.has_result;
         const result = county.result;
-        const isGolden = result && result.verified;
-        
         let rowClass = 'county-row';
-        if (isGolden) {
-            rowClass += ' golden';
-        } else if (hasResult) {
+        if (hasResult) {
             rowClass += ' has-result';
         } else {
             rowClass += ' no-result';
@@ -633,15 +622,7 @@ function displayCounties(counties) {
                             <button class="btn btn-sm btn-outline-info me-1" onclick="editResult(${result.id})" title="Edit Result">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            ${!isGolden ? `
-                                <button class="btn btn-sm btn-outline-warning me-1" onclick="markAsGolden(${result.id})" title="Mark as Golden">
-                                    <i class="fas fa-star"></i>
-                                </button>
-                            ` : `
-                                <span class="badge bg-warning text-dark me-1" title="Golden Result">
-                                    <i class="fas fa-star"></i> Golden
-                                </span>
-                            `}
+
                             <button class="btn btn-sm btn-outline-danger me-1" onclick="deleteResult(${result.id}, ${county.id})" title="Delete Result">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -758,26 +739,7 @@ function deleteResult(resultId, countyId) {
     });
 }
 
-function markAsGolden(resultId) {
-    fetch(`/api/search-result/${resultId}/golden`, {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Result marked as golden!');
-            // Refresh the modal to show updated results
-            if (currentStateCode) {
-                showStateDetails(currentStateCode);
-            }
-        } else {
-            alert('Error marking as golden: ' + data.error);
-        }
-    })
-    .catch(error => {
-        alert('Error: ' + error.message);
-    });
-}
+
 
 function editResult(resultId) {
     // Fetch the result data

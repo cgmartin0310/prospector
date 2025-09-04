@@ -13,7 +13,7 @@ app.config.from_object(Config)
 os.makedirs('static', exist_ok=True)
 
 # Initialize database
-from models import db, State, County, ProspectingJob, SearchResult, GoldenResult
+from models import db, State, County, ProspectingJob, SearchResult
 db.init_app(app)
 
 # Custom template filters
@@ -87,7 +87,7 @@ def index():
         'active_jobs': ProspectingJob.query.filter_by(status='running').count(),
         'total_results': SearchResult.query.filter(SearchResult.organization_name.isnot(None)).count(),
         'states_available': states_with_counties,
-        'golden_results': GoldenResult.query.count() if GoldenResult else 0
+        'golden_results': 0 # Removed GoldenResult count
     }
     return render_template('index.html', recent_jobs=recent_jobs, stats=stats)
 
@@ -722,24 +722,7 @@ def api_delete_search_result(result_id):
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
-@app.route('/api/search-result/<int:result_id>/golden', methods=['POST'])
-def api_mark_as_golden(result_id):
-    """Mark a search result as golden"""
-    try:
-        result = SearchResult.query.get(result_id)
-        if not result:
-            return jsonify({"success": False, "error": "Search result not found"})
-        
-        result.verified = True
-        db.session.commit()
-        
-        return jsonify({
-            "success": True,
-            "message": "Search result marked as golden"
-        })
-        
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+
 
 @app.route('/api/search-result/<int:result_id>', methods=['GET'])
 def api_get_search_result(result_id):
@@ -915,183 +898,19 @@ def api_update_search_result(result_id):
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
-@app.route('/api/result/<int:result_id>/toggle-golden', methods=['POST'])
-def api_toggle_golden(result_id):
-    """Toggle golden status for a search result"""
-    try:
-        result = SearchResult.query.get_or_404(result_id)
-        
-        if not result.organization_name:
-            return jsonify({"success": False, "error": "Cannot mark result as golden - no organization found"})
-        
-        if result.is_golden:
-            # Remove from golden dataset
-            result.is_golden = False
-            
-            # Also remove from GoldenResult table if it exists
-            golden_result = GoldenResult.query.filter_by(
-                organization_name=result.organization_name,
-                county_id=result.county_id
-            ).first()
-            
-            if golden_result:
-                db.session.delete(golden_result)
-            
-            db.session.commit()
-            message = f"Removed '{result.organization_name}' from Golden Dataset"
-        else:
-            # Add to golden dataset
-            result.is_golden = True
-            
-            # Create GoldenResult entry
-            golden_result = GoldenResult(
-                organization_name=result.organization_name,
-                description=result.description,
-                services=json.dumps({
-                    "overdose_response": True,
-                    "harm_reduction": True,
-                    "naloxone_distribution": True
-                }),
-                county_id=result.county_id,
-                state_id=result.county.state_id,
-                key_personnel_name=result.key_personnel_name,
-                key_personnel_title=result.key_personnel_title,
-                key_personnel_phone=result.key_personnel_phone,
-                key_personnel_email=result.key_personnel_email,
-                contact_info=result.contact_info,
-                address=result.address,
-                verification_source="Manual Verification",
-                verified_by="User",
-                search_query=result.job.search_query if result.job else "overdose response team",
-                search_category="overdose_response",
-                relevance_score=1.0,
-                completeness_score=1.0,
-                notes=f"Marked as golden by user - verified perfect match for {result.county.name} County"
-            )
-            
-            db.session.add(golden_result)
-            db.session.commit()
-            message = f"Added '{result.organization_name}' to Golden Dataset"
-        
-        return jsonify({
-            "success": True,
-            "message": message,
-            "is_golden": result.is_golden
-        })
-        
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     """Serve static files including GeoJSON"""
     return send_file(f'static/{filename}')
 
-@app.route('/golden-dataset')
-def golden_dataset():
-    """Golden Dataset management page"""
-    golden_results = GoldenResult.query.order_by(GoldenResult.created_at.desc()).all()
-    stats = {
-        'total_golden': len(golden_results),
-        'states_covered': len(set(r.state_id for r in golden_results)),
-        'avg_relevance': sum(r.relevance_score for r in golden_results) / len(golden_results) if golden_results else 0,
-        'avg_completeness': sum(r.completeness_score for r in golden_results) / len(golden_results) if golden_results else 0
-    }
-    return render_template('golden_dataset.html', golden_results=golden_results, stats=stats)
 
-@app.route('/api/golden-dataset')
-def api_golden_dataset():
-    """API endpoint to get golden dataset for AI prompts"""
-    try:
-        golden_results = GoldenResult.query.all()
-        return jsonify({
-            "success": True,
-            "data": [result.to_dict() for result in golden_results]
-        })
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
 
-@app.route('/api/golden-result/<int:result_id>')
-def api_golden_result_details(result_id):
-    """Get details of a specific golden result"""
-    try:
-        result = GoldenResult.query.get_or_404(result_id)
-        return jsonify({
-            "success": True,
-            "data": result.to_dict()
-        })
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
 
-@app.route('/api/golden-result/<int:result_id>/delete', methods=['DELETE'])
-def api_delete_golden_result(result_id):
-    """Delete a golden result"""
-    try:
-        result = GoldenResult.query.get_or_404(result_id)
-        organization_name = result.organization_name
-        
-        # Also remove golden flag from corresponding SearchResult if it exists
-        search_result = SearchResult.query.filter_by(
-            organization_name=result.organization_name,
-            county_id=result.county_id
-        ).first()
-        
-        if search_result:
-            search_result.is_golden = False
-        
-        db.session.delete(result)
-        db.session.commit()
-        
-        return jsonify({
-            "success": True,
-            "message": f"Deleted golden result: {organization_name}"
-        })
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
 
-@app.route('/api/golden-dataset/export')
-def api_export_golden_dataset():
-    """Export golden dataset as CSV"""
-    try:
-        golden_results = GoldenResult.query.all()
-        
-        # Create CSV content
-        csv_content = "Organization,Description,County,State,Key Personnel,Title,Phone,Email,Address,Website,Services,Verification Source,Search Category,Relevance Score,Completeness Score,Notes\n"
-        
-        for result in golden_results:
-            # Escape commas and quotes in CSV
-            def escape_csv(value):
-                if value is None:
-                    return ""
-                value = str(value).replace('"', '""')
-                if ',' in value or '"' in value or '\n' in value:
-                    return f'"{value}"'
-                return value
-            
-            services = result.services if result.services else "{}"
-            
-            csv_content += f"{escape_csv(result.organization_name)}," \
-                          f"{escape_csv(result.description)}," \
-                          f"{escape_csv(result.county.name)}," \
-                          f"{escape_csv(result.state.name)}," \
-                          f"{escape_csv(result.key_personnel_name)}," \
-                          f"{escape_csv(result.key_personnel_title)}," \
-                          f"{escape_csv(result.key_personnel_phone)}," \
-                          f"{escape_csv(result.key_personnel_email)}," \
-                          f"{escape_csv(result.address)}," \
-                          f"{escape_csv(result.website)}," \
-                          f"{escape_csv(services)}," \
-                          f"{escape_csv(result.verification_source)}," \
-                          f"{escape_csv(result.search_category)}," \
-                          f"{escape_csv(result.relevance_score)}," \
-                          f"{escape_csv(result.completeness_score)}," \
-                          f"{escape_csv(result.notes)}\n"
-        
-        # Create response
-        response = make_response(csv_content)
-        response.headers['Content-Type'] = 'text/csv'
-        response.headers['Content-Disposition'] = 'attachment; filename=golden_dataset.csv'
-        return response
-        
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+
+
+
+
+
