@@ -26,7 +26,7 @@ class AIService:
             
             # Use chat format with system and user messages
             data = {
-                'model': 'grok-4',
+                'model': 'grok-4-fast',
                 'messages': [
                     {
                         'role': 'system',
